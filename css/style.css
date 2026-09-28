@@ -1,0 +1,410 @@
+/* Farben der Rollen wie in den Abbildungen der Hausarbeit
+   (praxis_praeambel.tex: netcentral, netlegit, netisp, netattack, segixp).
+   Dunkles Design: gedeckte, dunkel getoente Flaechen statt Neonfarben,
+   dieselben Rollenfarben, nur heller fuer den Kontrast auf dunklem Grund. */
+:root {
+  color-scheme: light;
+  --bg: #eef1f4;
+  --flaeche: #ffffff;
+  --flaeche-2: #f6f7f9;
+  --inhalt-bg: #fbfcfd;
+  --kopf-bg: #f1f3f6;
+  --rand: #d6dbe2;
+  --rand-2: #e7eaee;
+  --text: #1c2330;
+  --text-2: #4a5466;
+  --text-3: #7c8596;
+
+  --m-rs: #0F6E56;   --f-rs: #E1F5EE;
+  --m-bob: #185FA5;  --f-bob: #E6F1FB;
+  --m-isp: #5F5E5A;  --f-isp: #F1EFE8;
+  --m-eve: #993C1D;  --f-eve: #FAECE7;
+  --seg: #8A8A85;
+  --sitzung: #9aa2ad;
+
+  --akzent: #0F6E56;
+  --akzent-weich: #E1F5EE;
+  --akzent-hover: #cdeee2;
+  --akzent-stark: #0c5a46;
+  --neu: #FFF6D8;
+  --neu-rand: #D1A01F;
+  --neu-text: #6b4f00;
+  --tick-befehl: #e8cfc5;
+  --tick-fertig: #aab2be;
+  --scroll-daumen: #c8ced7;
+  --scroll-daumen-hover: #aab2be;
+
+  --sx-zeit: #2A5D8F;
+  --sx-ip: #7A5B12;
+  --sx-praefix: #A3401C;
+  --sx-as: #0F6E56;
+  --sx-schluessel: #5B3E96;
+
+  --font-ui: "Segoe UI", system-ui, -apple-system, "Helvetica Neue", Arial, sans-serif;
+  --font-mono: "Cascadia Mono", Consolas, "SFMono-Regular", Menlo, monospace;
+}
+
+/* Ohne eigene Wahl (kein data-theme) folgt die Seite der Systemeinstellung. */
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) { --bg: #15181d; --flaeche: #1b1f26; --flaeche-2: #21262e; --inhalt-bg: #14171c; --kopf-bg: #1c2027;
+    --rand: #2c323c; --rand-2: #262b33; --text: #e7eaef; --text-2: #a7afbc; --text-3: #757e8c;
+    --m-rs: #4CC79E; --f-rs: #12241f; --m-bob: #6FA8E0; --f-bob: #17212f; --m-isp: #9aa2ad; --f-isp: #21252b;
+    --m-eve: #E0895D; --f-eve: #2b1a13; --seg: #6b7280; --sitzung: #545c68;
+    --akzent: #4CC79E; --akzent-weich: #12241f; --akzent-hover: #1a3a31; --akzent-stark: #3ddca8;
+    --neu: #3a2f10; --neu-rand: #c9a13a; --neu-text: #eecf7e;
+    --tick-befehl: #3c2c23; --tick-fertig: #454c58; --scroll-daumen: #333a44; --scroll-daumen-hover: #454c58;
+    --sx-zeit: #7FB4E8; --sx-ip: #D4AE5C; --sx-praefix: #E68F63; --sx-as: #4CC79E; --sx-schluessel: #B29CE0;
+    color-scheme: dark; }
+}
+:root[data-theme="dark"] { --bg: #15181d; --flaeche: #1b1f26; --flaeche-2: #21262e; --inhalt-bg: #14171c; --kopf-bg: #1c2027;
+  --rand: #2c323c; --rand-2: #262b33; --text: #e7eaef; --text-2: #a7afbc; --text-3: #757e8c;
+  --m-rs: #4CC79E; --f-rs: #12241f; --m-bob: #6FA8E0; --f-bob: #17212f; --m-isp: #9aa2ad; --f-isp: #21252b;
+  --m-eve: #E0895D; --f-eve: #2b1a13; --seg: #6b7280; --sitzung: #545c68;
+  --akzent: #4CC79E; --akzent-weich: #12241f; --akzent-hover: #1a3a31; --akzent-stark: #3ddca8;
+  --neu: #3a2f10; --neu-rand: #c9a13a; --neu-text: #eecf7e;
+  --tick-befehl: #3c2c23; --tick-fertig: #454c58; --scroll-daumen: #333a44; --scroll-daumen-hover: #454c58;
+  --sx-zeit: #7FB4E8; --sx-ip: #D4AE5C; --sx-praefix: #E68F63; --sx-as: #4CC79E; --sx-schluessel: #B29CE0;
+  color-scheme: dark; }
+
+* { box-sizing: border-box; }
+html, body { margin: 0; padding: 0; }
+html { background: var(--bg); }
+body {
+  background: var(--bg); color: var(--text); font-family: var(--font-ui); font-size: 13px;
+  height: 100vh; display: flex; flex-direction: column; overflow: hidden;
+}
+button { font-family: var(--font-ui); }
+
+/* ---------- Kopf ---------- */
+header {
+  flex: 0 0 56px; display: flex; align-items: center; gap: 28px; padding: 0 18px;
+  background: var(--flaeche); border-bottom: 1px solid var(--rand);
+}
+.marke-titel { display: flex; flex-direction: column; line-height: 1.25; white-space: nowrap; }
+.marke-titel b { font-size: 14.5px; font-weight: 600; }
+.marke-titel span { font-size: 11px; color: var(--text-3); }
+
+.szenario-reiter { display: flex; gap: 2px; background: var(--flaeche-2); border: 1px solid var(--rand); border-radius: 7px; padding: 3px; }
+.szenario-reiter button {
+  appearance: none; border: 1px solid transparent; cursor: pointer; background: transparent; color: var(--text-2);
+  padding: 4px 14px; border-radius: 5px; display: flex; flex-direction: column; align-items: flex-start; line-height: 1.3;
+}
+.szenario-reiter .tag { font-family: var(--font-mono); font-size: 10px; color: var(--text-3); }
+.szenario-reiter .name { font-size: 12.5px; font-weight: 600; }
+.szenario-reiter button:hover { color: var(--text); }
+.szenario-reiter button.active { background: var(--flaeche); border-color: var(--rand); color: var(--text); box-shadow: 0 1px 2px rgba(28,35,48,.08); }
+.szenario-reiter button.active .tag { color: var(--akzent); }
+
+.kopf-knopf {
+  appearance: none; margin-left: auto; width: 30px; height: 30px; border-radius: 6px; border: 1px solid var(--rand);
+  background: var(--flaeche); color: var(--text-2); font-weight: 600; font-size: 13px; cursor: pointer;
+}
+.kopf-knopf:hover { color: var(--text); border-color: var(--text-3); }
+.kopf-knopf.klein { width: auto; height: 22px; padding: 0 8px; font-size: 12px; }
+#themaUmschalten { position: relative; }
+#themaUmschalten svg { width: 15px; height: 15px; fill: currentColor; position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); }
+#themaUmschalten .thema-mond { display: none; }
+:root[data-theme="dark"] #themaUmschalten .thema-sonne { display: none; }
+:root[data-theme="dark"] #themaUmschalten .thema-mond { display: block; }
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) #themaUmschalten .thema-sonne { display: none; }
+  :root:not([data-theme="light"]) #themaUmschalten .thema-mond { display: block; }
+}
+
+/* ---------- Buehne ---------- */
+main { flex: 1 1 auto; min-height: 0; display: flex; }
+#buehne { flex: 1 1 auto; min-width: 0; display: flex; flex-direction: column; }
+
+/* feste Hoehe: der Netzplan darunter behaelt in jedem Schritt seinen Massstab */
+.schritt-kopf {
+  flex: 0 0 158px; height: 158px; display: grid; grid-template-columns: minmax(0, .9fr) minmax(0, 1.25fr); gap: 20px;
+  padding: 12px 20px; background: var(--flaeche); border-bottom: 1px solid var(--rand);
+}
+.sk-text { min-height: 0; overflow-y: auto; }
+.sk-details { min-height: 0; overflow-y: auto; border-left: 1px solid var(--rand-2); padding-left: 18px; }
+.kopf-zeile { display: flex; align-items: center; gap: 12px; margin-bottom: 7px; white-space: nowrap; }
+.phase-chip {
+  font-size: 12px; white-space: nowrap; padding: 2px 9px; border-radius: 4px; border: 1px solid var(--rand);
+  background: var(--flaeche-2); color: var(--text-2); display: inline-flex; align-items: center; gap: 4px;
+}
+.phase-chip b { font-family: var(--font-mono); color: var(--text); }
+.phase-chip.phase-ereignis { border-color: var(--m-eve); background: var(--f-eve); }
+.phase-chip.phase-ereignis b { color: var(--m-eve); }
+.phase-chip.phase-zustand { border-color: var(--m-rs); background: var(--f-rs); }
+.phase-chip.phase-zustand b { color: var(--m-rs); }
+.chip-art { margin-left: 8px; font-size: 10px; text-transform: uppercase; letter-spacing: .07em; color: var(--text-3); }
+.kopf-dezent { font-size: 11.5px; color: var(--text-3); font-family: var(--font-mono); }
+@media (max-width: 1500px) { .chip-art { display: none; } }
+.kopf-zeit { margin-left: auto; font-family: var(--font-mono); font-size: 13px; font-weight: 600; color: var(--text); }
+.schritt-kopf h2 { margin: 0 0 4px; font-size: 16px; font-weight: 600; }
+.schritt-kopf p { margin: 0; font-size: 13px; line-height: 1.5; color: var(--text-2); }
+
+.ev-kopf { font-size: 11px; color: var(--text-3); margin: 1px 0 6px; font-family: var(--font-mono); }
+.ev-zeile { font-family: var(--font-mono); font-size: 11px; color: var(--text-2); display: flex; gap: 10px; align-items: baseline; line-height: 1.7; }
+.ev-zeile > span { flex: 0 0 auto; }
+.ev-zeile > .ev-inhalt { flex: 1 1 auto; min-width: 0; line-height: 1.45; }
+.ev-zeit { color: var(--text-3); width: 102px; }
+.ev-weg { color: var(--text); width: 96px; font-weight: 600; }
+.ev-sys { color: var(--text); width: 58px; font-weight: 600; }
+.ev-sys + .ev-art { width: 96px; text-align: center; }
+.ev-weg + .ev-art { width: 84px; text-align: center; }
+.ev-art { font-family: var(--font-ui); font-size: 10.5px; font-weight: 600; padding: 0 6px; border-radius: 3px; border: 1px solid var(--rand); background: var(--flaeche-2); color: var(--text-2); }
+.ev-W { background: var(--flaeche); border-style: dashed; }
+.ev-eve { background: var(--f-eve); border-color: var(--m-eve); color: var(--m-eve); }
+.ev-bob { background: var(--f-bob); border-color: var(--m-bob); color: var(--m-bob); }
+.ev-loc .ev-weg { color: var(--m-rs); }
+.ev-pfad { color: var(--text-3); }
+.ev-roh { font-family: var(--font-mono); font-size: 11px; color: var(--text); background: var(--flaeche-2); border: 1px solid var(--rand-2); border-radius: 4px; padding: 6px 9px; overflow-wrap: anywhere; }
+
+.netz-wrap { flex: 1 1 auto; position: relative; min-height: 0; padding: 12px; }
+svg#netz { width: 100%; height: 100%; display: block; }
+
+/* ---------- Netzplan ---------- */
+.ebene-flaeche { fill: var(--flaeche); stroke: var(--rand); }
+.ebene-titel { font-family: var(--font-ui); font-size: 11px; font-weight: 600; letter-spacing: .12em; fill: var(--text-2); }
+.ebene-sub { font-family: var(--font-mono); font-size: 10px; fill: var(--text-3); }
+.legende-text { font-family: var(--font-ui); font-size: 10.5px; fill: var(--text-2); }
+.legende-as { font-family: var(--font-mono); font-size: 10px; fill: var(--text-2); }
+
+.sitzung { stroke: var(--sitzung); stroke-width: 1.4; stroke-dasharray: 5 4; }
+.bus { stroke: var(--seg); stroke-width: 6; stroke-linecap: round; }
+.anschluss { stroke: var(--seg); stroke-width: 2; }
+.anschluss-punkt { fill: var(--flaeche); stroke: var(--seg); stroke-width: 2; }
+.zugang { stroke-width: 2; }
+.zugang.rolle-isp { stroke: var(--m-isp); }
+.zugang.rolle-bob { stroke: var(--m-bob); }
+.zugang.rolle-eve { stroke: var(--m-eve); }
+.segment-text { font-family: var(--font-mono); font-size: 10px; fill: var(--text-3); }
+.flugbahn { fill: none; stroke-width: 2.2; stroke-opacity: .5; stroke-linejoin: round; }
+
+.knoten { cursor: pointer; transition: opacity .2s ease; }
+.knoten.rolle-rs  { --f: var(--f-rs);  --s: var(--m-rs); }
+.knoten.rolle-bob { --f: var(--f-bob); --s: var(--m-bob); }
+.knoten.rolle-isp { --f: var(--f-isp); --s: var(--m-isp); }
+.knoten.rolle-eve { --f: var(--f-eve); --s: var(--m-eve); }
+.knoten-kasten { fill: var(--f); stroke: var(--s); stroke-width: 1.2; }
+.knoten-akzent { fill: var(--s); }
+.knoten:hover .knoten-kasten { stroke-width: 2; }
+.knoten.selected .knoten-kasten { stroke-width: 2.6; }
+.knoten.dim { opacity: .38; }
+.knoten.puls .knoten-kasten { animation: puls 1.1s ease-in-out infinite; }
+@keyframes puls { 0%, 100% { stroke-width: 1.2; } 50% { stroke-width: 3.5; } }
+.knoten-titel { font-family: var(--font-ui); font-size: 13px; font-weight: 600; fill: var(--text); }
+.knoten-sub { font-family: var(--font-mono); font-size: 10px; fill: var(--text-3); }
+.knoten-zustand { font-family: var(--font-mono); font-size: 10.5px; font-weight: 600; fill: var(--text); }
+.knoten-zustand-2 { font-family: var(--font-mono); font-size: 9.5px; fill: var(--text-3); }
+
+/* ---------- Info-Karte eines Systems ---------- */
+.edge-info {
+  position: absolute; right: 22px; top: 20px; width: 340px; max-height: calc(100% - 40px); overflow-y: auto;
+  background: var(--flaeche); border: 1px solid var(--rand); border-radius: 8px;
+  padding: 12px 14px; box-shadow: 0 8px 28px rgba(28,35,48,.14);
+}
+.edge-info.hidden { display: none; }
+.ei-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 4px; }
+.ei-title { font-family: var(--font-mono); font-size: 14px; font-weight: 600; }
+.ei-close { appearance: none; border: none; background: transparent; color: var(--text-3); font-size: 20px; line-height: 1; cursor: pointer; }
+.ei-close:hover { color: var(--text); }
+.ei-rolle { font-size: 12px; color: var(--text-2); margin-bottom: 8px; }
+.ei-fakten { display: grid; grid-template-columns: auto 1fr; gap: 3px 10px; margin: 0 0 10px; font-size: 11px; }
+.ei-fakten dt { color: var(--text-3); }
+.ei-fakten dd { margin: 0; font-family: var(--font-mono); font-size: 10.5px; color: var(--text); }
+.ei-seg { display: block; font-family: var(--font-ui); font-size: 10px; color: var(--text-3); }
+.ei-knopf {
+  appearance: none; width: 100%; cursor: pointer; font-size: 12px; font-weight: 600; padding: 6px 8px;
+  border-radius: 5px; border: 1px solid var(--akzent); background: var(--akzent-weich); color: var(--akzent); margin-bottom: 10px;
+}
+.ei-knopf:hover { background: var(--akzent-hover); }
+.ei-konfig summary { cursor: pointer; font-size: 11.5px; color: var(--text-2); }
+.ei-konfig pre { font-family: var(--font-mono); font-size: 10px; color: var(--text); background: var(--flaeche-2); border: 1px solid var(--rand-2); border-radius: 4px; padding: 7px 9px; margin: 6px 0 0; white-space: pre; overflow-x: auto; }
+
+/* ---------- Seitenleiste ---------- */
+/* min-width 0: sonst setzt die laengste Protokollzeile (white-space: pre) die
+   Mindestbreite und die Leiste drueckt den Netzplan zusammen. */
+#leiste {
+  flex: 0 0 clamp(420px, 33vw, 560px); width: clamp(420px, 33vw, 560px); min-width: 0; background: var(--flaeche); border-left: 1px solid var(--rand);
+  display: flex; flex-direction: column; min-height: 0;
+}
+body.leiste-breit #leiste { flex-basis: 860px; width: 860px; }
+.leiste-teil { display: flex; flex-direction: column; min-height: 0; min-width: 0; }
+#artListe, .art-karte, .art-inhalt { min-width: 0; }
+.ablauf-teil { flex: 0 0 auto; border-bottom: 1px solid var(--rand); }
+.art-teil { flex: 1 1 auto; }
+.leiste-kopf {
+  flex: 0 0 auto; display: flex; align-items: center; gap: 10px; padding: 0 14px; height: 38px;
+  font-size: 11px; font-weight: 600; letter-spacing: .08em; text-transform: uppercase; color: var(--text-2);
+  border-bottom: 1px solid var(--rand-2); background: var(--flaeche-2);
+}
+.leiste-kopf .kopf-dezent { text-transform: none; letter-spacing: 0; font-weight: 400; }
+.klapp {
+  appearance: none; border: none; background: transparent; color: var(--text-2); cursor: pointer;
+  font-size: 11px; font-weight: 600; letter-spacing: .08em; text-transform: uppercase; padding: 0;
+}
+.art-teil .klapp { margin-left: auto; }
+.art-teil .filter-knopf + .klapp { margin-left: 0; }
+.filter-knopf { border: 1px solid var(--rand); border-radius: 4px; padding: 2px 8px; white-space: nowrap; flex: 0 0 auto; }
+#artZaehler { min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.filter-knopf.an { color: var(--neu-text); background: var(--neu); border-color: var(--neu-rand); }
+.klapp:hover { color: var(--text); }
+
+#ablauf { max-height: 200px; overflow-y: auto; padding: 4px 0; }
+#ablauf.zu { display: none; }
+.ablauf-zeile {
+  appearance: none; width: 100%; border: none; border-left: 3px solid transparent; background: transparent; cursor: pointer; text-align: left;
+  display: grid; grid-template-columns: 26px 96px 1fr; gap: 8px; padding: 3px 12px 3px 11px;
+  font-size: 12px; color: var(--text-3); align-items: baseline;
+}
+.ablauf-zeile:hover { background: var(--flaeche-2); color: var(--text-2); }
+.ablauf-zeile.fertig { color: var(--text-2); }
+.ablauf-zeile.jetzt { background: var(--akzent-weich); border-left-color: var(--akzent); color: var(--text); }
+.ab-phase { font-family: var(--font-mono); font-weight: 600; }
+.ablauf-zeile.art-zustand .ab-phase { color: var(--m-rs); }
+.ablauf-zeile.art-befehl .ab-phase, .ablauf-zeile.art-ereignis .ab-phase { color: var(--m-eve); }
+.ab-zeit { font-family: var(--font-mono); font-size: 11px; }
+
+#artWahl { flex: 0 0 auto; padding: 10px 14px 12px; border-bottom: 1px solid var(--rand-2); display: flex; flex-direction: column; gap: 12px; }
+#artWahl.zu { display: none; }
+.wahl-gruppe + .wahl-gruppe { padding-top: 2px; border-top: 1px solid var(--rand-2); }
+.wahl-kopf { display: flex; align-items: center; gap: 6px; font-size: 10.5px; color: var(--text-3); text-transform: uppercase; letter-spacing: .06em; margin-bottom: 7px; }
+.wahl-kopf span { margin-right: auto; }
+.wahl-kopf button {
+  appearance: none; border: 1px solid var(--rand); background: var(--flaeche); color: var(--text-2);
+  font-size: 10.5px; padding: 1px 8px; border-radius: 4px; cursor: pointer;
+}
+.wahl-kopf button:hover { color: var(--text); border-color: var(--text-3); }
+.wahl-chips { display: grid; grid-template-columns: repeat(auto-fill, minmax(124px, 1fr)); gap: 5px; }
+.chip {
+  appearance: none; cursor: pointer; font-size: 11px; padding: 4px 8px; border-radius: 4px;
+  border: 1px solid var(--rand); background: var(--flaeche); color: var(--text-3);
+  display: flex; align-items: center; gap: 5px; text-align: left; overflow: hidden;
+}
+.chip > span:last-child { flex: 1 1 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.chip:hover { color: var(--text-2); border-color: var(--text-3); }
+.chip-sys { font-family: var(--font-mono); font-weight: 600; font-size: 10.5px; flex: 0 0 auto; }
+.chip.an { color: var(--text); }
+.chip.rolle-rs .chip-sys  { color: var(--m-rs); }
+.chip.rolle-bob .chip-sys { color: var(--m-bob); }
+.chip.rolle-isp .chip-sys { color: var(--m-isp); }
+.chip.rolle-eve .chip-sys { color: var(--m-eve); }
+.chip.an.rolle-rs  { background: var(--f-rs);  border-color: var(--m-rs); }
+.chip.an.rolle-bob { background: var(--f-bob); border-color: var(--m-bob); }
+.chip.an.rolle-isp { background: var(--f-isp); border-color: var(--m-isp); }
+.chip.an.rolle-eve { background: var(--f-eve); border-color: var(--m-eve); }
+.chip.neu::after { content: ''; flex: 0 0 auto; width: 7px; height: 7px; border-radius: 50%; background: var(--neu-rand); }
+.chip.beste { box-shadow: 0 0 0 1px var(--akzent); }
+.chip.beste:not(.an) { border-color: var(--akzent); color: var(--akzent); }
+
+#artListe { flex: 1 1 auto; overflow-y: auto; padding: 12px 14px 18px; display: flex; flex-direction: column; gap: 12px; background: var(--flaeche-2); }
+.leer-hinweis { font-size: 12px; color: var(--text-3); padding: 10px 2px; }
+.art-karte {
+  border: 1px solid var(--rand); border-left: 3px solid var(--rand); border-radius: 6px;
+  background: var(--flaeche); overflow: hidden; flex: 0 0 auto;
+}
+.art-karte.rolle-rs  { border-left-color: var(--m-rs); }
+.art-karte.rolle-bob { border-left-color: var(--m-bob); }
+.art-karte.rolle-isp { border-left-color: var(--m-isp); }
+.art-karte.rolle-eve { border-left-color: var(--m-eve); }
+.art-karte.hat-neues { border-color: var(--neu-rand); border-left-color: var(--neu-rand); }
+.art-karte.beste { border-top-color: var(--akzent); border-right-color: var(--akzent); border-bottom-color: var(--akzent); box-shadow: 0 0 0 1px var(--akzent); }
+.art-best { font-size: 10.5px; font-weight: 600; color: var(--akzent); background: var(--akzent-weich); border: 1px solid var(--akzent); border-radius: 3px; padding: 0 6px; white-space: nowrap; }
+.art-kopf { display: flex; align-items: center; gap: 8px; padding: 8px 10px 3px; }
+.art-sys { font-family: var(--font-mono); font-weight: 600; font-size: 11.5px; }
+.art-karte.rolle-rs .art-sys  { color: var(--m-rs); }
+.art-karte.rolle-bob .art-sys { color: var(--m-bob); }
+.art-karte.rolle-isp .art-sys { color: var(--m-isp); }
+.art-karte.rolle-eve .art-sys { color: var(--m-eve); }
+.art-titel { font-size: 12px; font-weight: 600; }
+.art-neu { font-size: 10.5px; font-weight: 600; color: var(--neu-text); background: var(--neu); border: 1px solid var(--neu-rand); border-radius: 3px; padding: 0 6px; }
+.art-gross { margin-left: auto; appearance: none; border: none; background: transparent; color: var(--text-3); cursor: pointer; width: 20px; height: 20px; display: flex; align-items: center; justify-content: center; padding: 0; flex: 0 0 auto; }
+.art-gross svg { width: 12px; height: 12px; }
+.art-gross svg path { fill: none; stroke: currentColor; stroke-width: 1.6; stroke-linecap: round; stroke-linejoin: round; }
+.art-gross:hover { color: var(--text); }
+.art-gross.auf { color: var(--akzent); transform: rotate(180deg); }
+.art-weg { margin-left: 4px; appearance: none; border: none; background: transparent; color: var(--text-3); cursor: pointer; font-size: 16px; line-height: 1; flex: 0 0 auto; }
+.art-weg:hover { color: var(--text); }
+.art-meta { display: flex; align-items: center; gap: 8px; padding: 0 10px 6px; flex-wrap: wrap; }
+.art-befehl { font-family: var(--font-mono); font-size: 10.5px; color: var(--text-3); overflow-wrap: anywhere; }
+.art-tag { font-size: 10px; padding: 0 6px; border-radius: 3px; border: 1px solid var(--rand); color: var(--text-2); white-space: nowrap; }
+.art-leiste { display: flex; align-items: center; gap: 5px; padding: 0 10px 6px; font-size: 11px; color: var(--text-3); }
+.art-leiste select { background: var(--flaeche); color: var(--text); border: 1px solid var(--rand); border-radius: 4px; font-size: 11px; padding: 1px 4px; font-family: var(--font-ui); }
+.phase-knopf {
+  appearance: none; font-family: var(--font-mono); font-size: 10.5px; font-weight: 600; padding: 1px 8px;
+  border-radius: 4px; border: 1px solid var(--rand); background: var(--flaeche); color: var(--text-2); cursor: pointer;
+}
+.phase-knopf.aktiv { background: var(--akzent); color: #fff; border-color: var(--akzent); }
+.phase-knopf:disabled { opacity: .35; cursor: default; }
+.art-inhalt {
+  max-height: 320px; overflow: auto; background: var(--inhalt-bg); border-top: 1px solid var(--rand-2); border-bottom: 1px solid var(--rand-2);
+  padding: 4px 0; font-family: var(--font-mono); font-size: 11px; line-height: 1.55; color: var(--text);
+}
+body.leiste-breit .art-inhalt { max-height: 400px; }
+.art-inhalt.voll { max-height: min(72vh, 760px); }
+body.leiste-breit .art-inhalt.voll { max-height: min(76vh, 900px); }
+.z { white-space: pre; padding: 0 10px; border-left: 3px solid transparent; }
+.z-neu { background: var(--neu); border-left-color: var(--neu-rand); }
+.z-alt { opacity: .42; }
+.z-kopf { color: var(--text-3); position: sticky; top: -4px; background: var(--kopf-bg); border-bottom: 1px solid var(--rand-2); }
+.z-gutter { display: inline-block; color: var(--text-3); margin-right: 10px; }
+.z-leer { font-family: var(--font-ui); font-size: 11.5px; color: var(--text-3); padding: 4px 10px; white-space: normal; line-height: 1.45; }
+.art-fuss { display: flex; gap: 10px; justify-content: space-between; padding: 5px 10px 6px; font-size: 10.5px; color: var(--text-3); }
+.art-quelle { font-family: var(--font-mono); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; direction: rtl; text-align: left; max-width: 60%; }
+
+.sx-zeit { color: var(--sx-zeit); }
+.sx-ip { color: var(--sx-ip); }
+.sx-praefix { color: var(--sx-praefix); font-weight: 600; }
+.sx-as { color: var(--sx-as); }
+.sx-schluessel { color: var(--sx-schluessel); font-weight: 600; }
+
+/* ---------- Fuss: Wiedergabe und Phasenleiste ---------- */
+footer {
+  flex: 0 0 auto; display: flex; align-items: stretch; gap: 16px;
+  background: var(--flaeche); border-top: 1px solid var(--rand); padding: 10px 18px;
+}
+.transport { display: flex; align-items: center; gap: 6px; }
+.tbtn {
+  appearance: none; border: 1px solid var(--rand); background: var(--flaeche); color: var(--text);
+  width: 38px; height: 38px; border-radius: 6px; cursor: pointer; display: flex; align-items: center; justify-content: center; padding: 0;
+}
+.tbtn svg { width: 14px; height: 14px; fill: currentColor; }
+.tbtn:hover { border-color: var(--text-3); }
+.tbtn:disabled { opacity: .35; cursor: default; }
+#spielen { width: 46px; background: var(--akzent); color: #fff; border-color: var(--akzent); }
+#spielen:hover { background: var(--akzent-stark); }
+#phasen { flex: 1 1 auto; display: flex; gap: 6px; min-width: 0; }
+.phase-seg {
+  flex: 1 1 0; min-width: 0; display: flex; flex-direction: column; justify-content: center; gap: 6px; padding: 5px 9px 7px;
+  border: 1px solid var(--rand); border-radius: 6px; background: var(--flaeche);
+}
+.phase-seg.aktiv { border-color: var(--akzent); background: var(--akzent-weich); }
+.phase-seg.phase-ereignis.aktiv { border-color: var(--m-eve); background: var(--f-eve); }
+.phase-name {
+  appearance: none; border: none; background: transparent; color: var(--text-2); cursor: pointer; text-align: left;
+  font-size: 12px; padding: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.phase-name b { font-family: var(--font-mono); margin-right: 4px; }
+.phase-seg.phase-ereignis .phase-name b { color: var(--m-eve); }
+.phase-seg.phase-zustand .phase-name b { color: var(--m-rs); }
+.phase-ticks { display: flex; gap: 3px; }
+.tick { appearance: none; flex: 1 1 0; height: 6px; border: none; border-radius: 2px; background: var(--rand); cursor: pointer; padding: 0; }
+.tick:hover { background: var(--text-3); }
+.tick.art-befehl { background: var(--tick-befehl); }
+.tick.fertig { background: var(--tick-fertig); }
+.tick.jetzt { background: var(--akzent); }
+.phase-seg.phase-ereignis .tick.jetzt { background: var(--m-eve); }
+
+/* ---------- Hilfe ---------- */
+dialog#hilfe {
+  max-width: 680px; background: var(--flaeche); color: var(--text-2); border: 1px solid var(--rand);
+  border-radius: 8px; padding: 18px 22px; font-size: 13px; line-height: 1.55; box-shadow: 0 12px 40px rgba(28,35,48,.2);
+}
+dialog#hilfe::backdrop { background: rgba(28,35,48,.35); }
+.hilfe-kopf { display: flex; justify-content: space-between; align-items: center; color: var(--text); font-size: 15px; }
+.hilfe-kopf button { appearance: none; border: none; background: transparent; color: var(--text-3); font-size: 22px; cursor: pointer; }
+dialog#hilfe h3 { color: var(--text); font-size: 13px; margin: 14px 0 3px; }
+dialog#hilfe p { margin: 0; }
+dialog#hilfe code, kbd { font-family: var(--font-mono); font-size: 11.5px; background: var(--flaeche-2); border: 1px solid var(--rand); border-radius: 3px; padding: 0 4px; }
+
+::-webkit-scrollbar { width: 9px; height: 9px; }
+::-webkit-scrollbar-thumb { background: var(--scroll-daumen); border-radius: 5px; border: 2px solid transparent; background-clip: padding-box; }
+::-webkit-scrollbar-thumb:hover { background: var(--scroll-daumen-hover); background-clip: padding-box; border: 2px solid transparent; }
+::-webkit-scrollbar-track { background: transparent; }

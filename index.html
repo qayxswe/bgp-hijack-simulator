@@ -1,0 +1,117 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>BGP-Hijack-Simulator</title>
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+
+<header>
+  <div class="marke-titel">
+    <b>BGP-Hijack-Simulator</b>
+    <span>Versuchslauf 24.09.2026 · FRRouting 10.5.1 · Route-Server AS64500</span>
+  </div>
+  <nav class="szenario-reiter" id="szenarioReiter"></nav>
+  <button class="kopf-knopf" id="themaUmschalten" title="Dunkles/helles Design">
+    <svg class="thema-sonne" viewBox="0 0 16 16"><circle cx="8" cy="8" r="3.4"/><g stroke="currentColor" stroke-width="1.3" stroke-linecap="round"><line x1="8" y1="0.5" x2="8" y2="2.3"/><line x1="8" y1="13.7" x2="8" y2="15.5"/><line x1="0.5" y1="8" x2="2.3" y2="8"/><line x1="13.7" y1="8" x2="15.5" y2="8"/><line x1="2.7" y1="2.7" x2="4" y2="4"/><line x1="12" y1="12" x2="13.3" y2="13.3"/><line x1="2.7" y1="13.3" x2="4" y2="12"/><line x1="12" y1="4" x2="13.3" y2="2.7"/></g></svg>
+    <svg class="thema-mond" viewBox="0 0 16 16"><path d="M14 9.8A6.2 6.2 0 1 1 6.2 2 5 5 0 0 0 14 9.8Z"/></svg>
+  </button>
+  <button class="kopf-knopf" id="hilfeAuf" title="Bedienung und Datengrundlage">?</button>
+</header>
+
+<main>
+  <section id="buehne">
+    <div class="schritt-kopf">
+      <div class="sk-text">
+        <div class="kopf-zeile">
+          <span id="phaseChip" class="phase-chip"></span>
+          <span id="schrittZaehler" class="kopf-dezent"></span>
+          <span id="zeitAnzeige" class="kopf-zeit"></span>
+        </div>
+        <h2 id="schrittTitel"></h2>
+        <p id="schrittText"></p>
+      </div>
+      <div id="schrittDetails" class="sk-details"></div>
+    </div>
+    <div class="netz-wrap">
+      <svg id="netz" viewBox="0 0 1000 620" preserveAspectRatio="xMidYMid meet"></svg>
+      <div class="edge-info hidden" id="knotenInfo">
+        <div class="ei-head"><span class="ei-title"></span><button class="ei-close" title="Schließen (Esc)">&times;</button></div>
+        <div class="ei-body"></div>
+      </div>
+    </div>
+  </section>
+
+  <aside id="leiste">
+    <div class="leiste-teil ablauf-teil">
+      <div class="leiste-kopf">
+        <button id="ablaufUmschalten" class="klapp">Ablauf ▾</button>
+        <button id="breiter" class="kopf-knopf klein" title="Seitenleiste verbreitern">&harr;</button>
+      </div>
+      <div id="ablauf"></div>
+    </div>
+    <div class="leiste-teil art-teil">
+      <div class="leiste-kopf">
+        <span>Artefakte</span>
+        <span id="artZaehler" class="kopf-dezent"></span>
+        <button id="nurNeue" class="klapp filter-knopf" aria-pressed="false" title="Nur Artefakte mit neuen Zeilen in diesem Schritt zeigen (statt der Auswahl)">Nur Neues</button>
+        <button id="wahlUmschalten" class="klapp">Auswahl ▸</button>
+      </div>
+      <div id="artWahl" class="zu"></div>
+      <div id="artListe"></div>
+    </div>
+  </aside>
+</main>
+
+<footer>
+  <div class="transport">
+    <button class="tbtn" id="zurueck" title="Schritt zurück (←)"><svg viewBox="0 0 16 16"><rect x="3" y="3" width="2" height="10"/><polygon points="13,3 13,13 6,8"/></svg></button>
+    <button class="tbtn" id="spielen" title="Nächster Schritt (Leertaste)"></button>
+    <button class="tbtn" id="vor" title="Schritt vor (→)"><svg viewBox="0 0 16 16"><polygon points="3,3 3,13 10,8"/><rect x="11" y="3" width="2" height="10"/></svg></button>
+  </div>
+  <div id="phasen"></div>
+</footer>
+
+<dialog id="hilfe">
+  <div class="hilfe-kopf"><b>Bedienung und Datengrundlage</b><button id="hilfeZu" title="Schließen">&times;</button></div>
+  <h3>Ablauf</h3>
+  <p>Jedes Szenario durchläuft die Phasen der Hausarbeit: <b>T0</b> Ausgangszustand, <b>T1</b> Ankündigung,
+    <b>T2</b> Angriff aktiv, <b>T3</b> Rücknahme und <b>T4</b> wiederhergestellter Ausgangszustand.
+    T0, T2 und T4 sind Zustände mit Messpunkt; der Schritt steht am Ende der jeweiligen Abfragen.
+    T1 und T3 sind Ereignisse. Sie beginnen mit dem Befehl auf hijacker und sind danach in die
+    Nachrichtengruppen auf der Leitung zerlegt. Nach jedem einzelnen Schritt hält die Wiedergabe
+    automatisch an; für den nächsten Schritt erneut auf „Abspielen“ klicken oder die Leertaste drücken.</p>
+  <h3>Netzplan</h3>
+  <p>Kontrollebene: Sitzungen zu rs mit den UPDATEs des Schritts laut Mitschnitt, je Richtung eine Spur.
+    rs zeigt den Best Path laut BMP (Loc-RIB). Datenebene: Routing-Tabellen von asa und asb (letzte Abfrage),
+    Messung von clienta und Zugriffe auf die Webserver.</p>
+  <h3>Artefakte</h3>
+  <p>Protokolle zeigen alle Zeilen bis zum aktuellen Zeitpunkt, neue Zeilen des Schritts sind hervorgehoben,
+    Zeilen vor Beginn des Szenarios (vor den Abfragen zu T0) abgeblendet. „Nur Neues“ zeigt statt der Auswahl
+    alle Artefakte, die in diesem Schritt neue Zeilen haben; in der Auswahl sind sie mit einem Punkt markiert. Abfragen zeigen die letzte Abfrage zu T0, T2 oder T4.
+    rib.mrt zeigt den letzten Dump zur vollen Minute; erhalten ist nur der Stand von 18:47:00.
+    Ein Klick auf ein System im Netzplan zeigt dessen Konfiguration.</p>
+  <h3>Zeitliche Einordnung</h3>
+  <p>Mitschnitt (Mikrosekunden) und BMP (Millisekunden) werden nach ihrer eigenen Zeit eingeordnet.
+    MRT-Dump und Textprotokoll tragen nur ganze Sekunden. Ihre Zeilen erscheinen in dem Schritt, in dem
+    das festgehaltene UPDATE auf der Leitung liegt (gleicher Nachbar, gleiches Präfix, gleiche Reihenfolge).
+    Die Zeilen selbst sind unverändert.</p>
+  <h3>Datengrundlage</h3>
+  <p>Alle Zeilen sind wörtlich aus den Primärdaten übernommen (<code>js/rohdaten.js</code>,
+    erzeugt mit <code>werkzeug/rohdaten-erzeugen.ps1</code>). Die Paketlisten der Mitschnitte liest
+    tshark aus den pcap-Dateien.</p>
+  <h3>Tastatur</h3>
+  <p><kbd>←</kbd> <kbd>→</kbd> Schritt · <kbd>Leertaste</kbd> nächster Schritt/anhalten · <kbd>0</kbd>–<kbd>4</kbd> Phase T0–T4 ·
+    <kbd>Pos1</kbd> <kbd>Ende</kbd> Anfang/Ende · <kbd>Esc</kbd> Info schließen</p>
+</dialog>
+
+<script src="js/rohdaten.js"></script>
+<script src="js/modell.js"></script>
+<script src="js/netz.js"></script>
+<script src="js/artefakte.js"></script>
+<script src="js/steuerung.js"></script>
+<script src="js/app.js"></script>
+</body>
+</html>
