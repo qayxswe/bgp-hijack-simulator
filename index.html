@@ -44,6 +44,8 @@
     </div>
   </section>
 
+  <div id="trenner" title="Ziehen: Breite anpassen · Doppelklick: zurücksetzen"></div>
+
   <aside id="leiste">
     <div class="leiste-teil ablauf-teil">
       <div class="leiste-kopf">
@@ -54,7 +56,8 @@
     </div>
     <div class="leiste-teil art-teil">
       <div class="leiste-kopf">
-        <span>Artefakte</span>
+        <button id="fokusZurueck" class="klapp" title="Zurück zur Artefaktliste (Esc)">← Alle Artefakte</button>
+        <span class="art-teil-titel">Artefakte</span>
         <span id="artZaehler" class="kopf-dezent"></span>
         <button id="nurNeue" class="klapp filter-knopf" aria-pressed="false" title="Nur Artefakte mit neuen Zeilen in diesem Schritt zeigen (statt der Auswahl)">Nur Neues</button>
         <button id="wahlUmschalten" class="klapp">Auswahl ▸</button>
@@ -91,6 +94,8 @@
   <p>Protokolle zeigen alle Zeilen bis zum aktuellen Zeitpunkt, neue Zeilen des Schritts sind hervorgehoben,
     Zeilen vor Beginn des Szenarios (vor den Abfragen zu T0) abgeblendet. „Nur Neues“ zeigt statt der Auswahl
     alle Artefakte, die in diesem Schritt neue Zeilen haben; in der Auswahl sind sie mit „!“ markiert.
+    Der Knopf <b>⧉</b> an einem Artefakt zeigt es allein über die volle Höhe neben dem Netzplan; <kbd>Esc</kbd> führt zurück.
+    Die Breite zwischen Netzplan und Seitenleiste lässt sich am Trenner ziehen, ein Doppelklick setzt sie zurück.
     Die BGP-Tabelle von rs fragt im Original nur das Zielpräfix ab. Darunter steht, kursiv und als Rekonstruktion
     gekennzeichnet, die gesamte Loc-RIB: Pfade aus den Adj-RIB-In-Abfragen derselben Phase, Best Path laut BMP. Abfragen zeigen die letzte Abfrage zu T0, T2 oder T4.
     rib.mrt zeigt den letzten Dump zur vollen Minute; erhalten ist nur der Stand von 18:47:00.

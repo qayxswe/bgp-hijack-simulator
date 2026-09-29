@@ -8,6 +8,8 @@
    - Abfragen (schnappschuss): die letzte Abfrage zu T0/T2/T4 bis zum
      aktuellen Zeitpunkt; fruehere Abfragen lassen sich umschalten.
    - rib.mrt (tabellendump): Stand des letzten Dumps zur vollen Minute.
+   - "Nebeneinander" (Knopf je Artefakt) zeigt ein einzelnes Artefakt ueber die
+     volle Hoehe der Seitenleiste neben dem Netzplan; Esc fuehrt zurueck.
    - "Nur Neues" zeigt statt der Auswahl alle Artefakte mit neuen Zeilen im
      aktuellen Schritt; in der Auswahl sind diese mit einem Punkt markiert.
    =========================================================================== */
@@ -29,6 +31,7 @@ window.App = window.App || {};
   let besteId = null, besteGrund = '';
   let neuIds = new Set();           // Artefakte mit neuen Zeilen im aktuellen Schritt
   let nurNeue = false;              // Anzeige auf Artefakte mit neuen Zeilen beschraenkt, statt Auswahl
+  let fokusId = null;               // Nebeneinander: nur dieses Artefakt, volle Hoehe
   const gewaehlteAnsicht = {};      // artefaktId -> Ansicht (bleibt ueber die Schritte erhalten)
   const gewaehlterAbschnitt = {};   // artefaktId -> Phase (manuelle Auswahl bis zum naechsten Schritt)
   const ausgeklappt = new Set();    // artefaktId -> Inhalt gross statt in fester Fensterhoehe
@@ -57,6 +60,18 @@ window.App = window.App || {};
     const a = new URLSearchParams(location.search).get('a');
     if (a) auswahl = new Set(a.split(',').filter((id) => M.ARTEFAKT[id]));
     wahlAufbauen();
+    document.addEventListener('keydown', (e) => { if (e.key === 'Escape' && fokusId) fokus(null); });
+  }
+
+  // Nebeneinander ein-/ausschalten. Beim Einschalten erhaelt die Seitenleiste die halbe
+  // Breite, sofern sie nicht schon von Hand eingestellt ist.
+  function fokus(id) {
+    fokusId = id && M.ARTEFAKT[id] ? id : null;
+    document.body.classList.toggle('fokus', !!fokusId);
+    if (fokusId && App.layout && !App.layout.istFrei()) {
+      App.layout.leisteBreite(document.querySelector('main').clientWidth / 2);
+    }
+    if (aktSz) zeichnen(aktSz, aktSchritt, true);
   }
 
   /* ---------------- Auswahl ---------------- */
@@ -137,6 +152,7 @@ window.App = window.App || {};
   function waehleSystem(sys) {
     auswahl = new Set(M.ARTEFAKTE.filter((a) => a.system === sys).map((a) => a.id));
     nurNeue = false;                       // Klick im Netzplan will genau dieses System sehen
+    fokusId = null; document.body.classList.remove('fokus');
     nachAuswahl();
     listeEl.scrollTop = 0;
   }
@@ -159,7 +175,8 @@ window.App = window.App || {};
       const inh = k.querySelector('.art-inhalt'); if (inh) alteScroll[k.dataset.id] = inh.scrollTop;
     });
     listeEl.innerHTML = '';
-    const gewaehlt = M.ARTEFAKTE.filter((a) => (nurNeue ? neuIds.has(a.id) : auswahl.has(a.id)));
+    const gewaehlt = fokusId ? [M.ARTEFAKT[fokusId]]
+      : M.ARTEFAKTE.filter((a) => (nurNeue ? neuIds.has(a.id) : auswahl.has(a.id)));
     if (!gewaehlt.length) {
       listeEl.innerHTML = nurNeue
         ? '<div class="leer-hinweis">Kein Artefakt hat in diesem Schritt neue Zeilen.</div>'
@@ -186,7 +203,8 @@ window.App = window.App || {};
           ${a.id === besteId ? `<span class="art-best" title="Wichtigstes Artefakt für diesen Schritt: ${esc(besteGrund)}">zentral</span>` : ''}
           ${erg.neu > 0 ? `<span class="art-neu">+${erg.neu} neu</span>` : ''}
           <button class="art-gross${gross ? ' auf' : ''}" title="${gross ? 'Fenster verkleinern' : 'Fenster ausklappen'}">${GROESSER_SVG}</button>
-          ${nurNeue ? '' : '<button class="art-weg" title="ausblenden">×</button>'}
+          <button class="art-fokus" title="${fokusId ? 'Zurück zur Artefaktliste (Esc)' : 'Nebeneinander: allein neben dem Netzplan anzeigen'}">⧉</button>
+          ${nurNeue || fokusId ? '' : '<button class="art-weg" title="ausblenden">×</button>'}
         </div>
         <div class="art-meta">
           <span class="art-befehl">${esc(befehl)}</span>
@@ -195,6 +213,7 @@ window.App = window.App || {};
         ${erg.leiste || ''}
         <div class="art-inhalt${gross ? ' voll' : ''}">${erg.html}</div>
         <div class="art-fuss"><span>${erg.fuss}</span><span class="art-quelle" title="Datei in den Primärdaten">Primaerdaten/${esc(quelle)}</span></div>`;
+      karte.querySelector('.art-fokus').addEventListener('click', () => fokus(fokusId ? null : a.id));
       const weg = karte.querySelector('.art-weg');
       if (weg) weg.addEventListener('click', () => umschalten(a.id));
       karte.querySelector('.art-gross').addEventListener('click', () => {
@@ -218,7 +237,8 @@ window.App = window.App || {};
         else inh.scrollTop = inh.scrollHeight;
       }
     });
-    zaehlerEl.textContent = (nurNeue ? gewaehlt.length + ' mit Neuem' : gewaehlt.length + ' gewählt')
+    if (fokusId) zaehlerEl.textContent = '';
+    else zaehlerEl.textContent = (nurNeue ? gewaehlt.length + ' mit Neuem' : gewaehlt.length + ' gewählt')
       + (neuGesamt ? ' · ' + neuGesamt + ' neue Einträge' : '');
   }
 
@@ -333,5 +353,5 @@ window.App = window.App || {};
     return s.replace(/\u0000(\d+)\u0000/g, (_, i) => halte[i]);
   };
 
-  App.artefakte = { init, zeichnen, waehleSystem };
+  App.artefakte = { init, zeichnen, waehleSystem, fokus };
 })(window.App);
