@@ -28,6 +28,8 @@
         <div class="kopf-zeile">
           <span id="phaseChip" class="phase-chip"></span>
           <span id="schrittZaehler" class="kopf-dezent"></span>
+          <button id="handschlagBtn" class="filter-knopf versteckt" aria-pressed="false"
+            title="TCP- und BGP-Handshake der drei Sitzungen zeigen (Neustart des Dienstes auf rs kurz vor T0)">Sitzungsaufbau</button>
           <span id="zeitAnzeige" class="kopf-zeit"></span>
         </div>
         <h2 id="schrittTitel"></h2>
@@ -92,7 +94,8 @@
     Zeilen vor Beginn des Szenarios (vor den Abfragen zu T0) abgeblendet. „Nur Neues“ zeigt statt der Auswahl
     alle Artefakte, die in diesem Schritt neue Zeilen haben; in der Auswahl sind sie mit einem Punkt markiert. Abfragen zeigen die letzte Abfrage zu T0, T2 oder T4.
     rib.mrt zeigt den letzten Dump zur vollen Minute; erhalten ist nur der Stand von 18:47:00.
-    Ein Klick auf ein System im Netzplan zeigt dessen Konfiguration.</p>
+    Ein Klick auf ein System im Netzplan zeigt dessen Konfiguration; das Info-Fenster laesst sich an
+    der Kopfzeile verschieben. Ein Klick in den Inhalt eines Artefakts oeffnet es ganzflaechig.</p>
   <h3>Zeitliche Einordnung</h3>
   <p>Mitschnitt (Mikrosekunden) und BMP (Millisekunden) werden nach ihrer eigenen Zeit eingeordnet.
     MRT-Dump und Textprotokoll tragen nur ganze Sekunden. Ihre Zeilen erscheinen in dem Schritt, in dem
@@ -106,6 +109,16 @@
   <p><kbd>←</kbd> <kbd>→</kbd> Schritt · <kbd>Leertaste</kbd> nächster Schritt/anhalten · <kbd>0</kbd>–<kbd>4</kbd> Phase T0–T4 ·
     <kbd>Pos1</kbd> <kbd>Ende</kbd> Anfang/Ende · <kbd>Esc</kbd> Info schließen</p>
 </dialog>
+
+<div class="vollbild versteckt" id="vollbild">
+  <div class="vollbild-karte">
+    <div class="vollbild-kopf">
+      <span id="vollbildTitel"></span>
+      <button id="vollbildZu" title="Schließen (Esc)">&times;</button>
+    </div>
+    <div class="vollbild-inhalt" id="vollbildInhalt"></div>
+  </div>
+</div>
 
 <script src="js/rohdaten.js"></script>
 <script src="js/modell.js"></script>
