@@ -21,7 +21,10 @@ window.App = window.App || {};
 
   const SPEICHER = 'bgp-sim-auswahl';
   const SPEICHER_NEU = 'bgp-sim-nur-neue';
-  const VORGABE = ['rs-mrt', 'rs-journal', 'rs-pcap', 'rs-bmp', 'rs-bgp'];
+  // rs-adj zeigt je Nachbar auch Praefixe ausserhalb des Angriffs (z. B. Bobs eigenes
+  // 198.51.96.0/20 mit den Rueckmeldungen von asa und hijacker) -- das war vorher nur
+  // ueber den inzwischen entfernten Abfrage-Knopf "Beginn" bei rs-bgp sichtbar.
+  const VORGABE = ['rs-mrt', 'rs-journal', 'rs-pcap', 'rs-bmp', 'rs-bgp', 'rs-adj'];
   const SYSTEM_ROLLE = { rs: 'rs', asa: 'isp', clienta: 'isp', asb: 'bob', weblegit: 'bob', hijacker: 'eve', webevil: 'eve' };
 
   let wahlEl, listeEl, zaehlerEl, nurNeueEl;
