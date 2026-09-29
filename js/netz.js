@@ -166,7 +166,7 @@ window.App = window.App || {};
       el.style.right = 'auto';
       el.style.left = r.left - el.offsetParent.getBoundingClientRect().left + 'px';
       el.style.top = r.top - el.offsetParent.getBoundingClientRect().top + 'px';
-      griff.setPointerCapture(ev.pointerId);
+      try { griff.setPointerCapture(ev.pointerId); } catch (e) { /* egal, z. B. synthetische Events */ }
     });
     griff.addEventListener('pointermove', (ev) => {
       if (!ziehen) return;
@@ -175,7 +175,7 @@ window.App = window.App || {};
       const y = Math.max(0, Math.min(ev.clientY - eltern.top - dy, eltern.height - el.offsetHeight));
       el.style.left = x + 'px'; el.style.top = y + 'px';
     });
-    griff.addEventListener('pointerup', (ev) => { ziehen = false; griff.releasePointerCapture(ev.pointerId); });
+    griff.addEventListener('pointerup', (ev) => { ziehen = false; try { griff.releasePointerCapture(ev.pointerId); } catch (e) { /* egal */ } });
   }
 
   /* ---------------- Wege ---------------- */
