@@ -276,7 +276,7 @@ body.leiste-breit #leiste { flex-basis: 860px; width: 860px; }
 .chip {
   appearance: none; cursor: pointer; font-size: 11px; padding: 4px 8px; border-radius: 4px;
   border: 1px solid var(--rand); background: var(--flaeche); color: var(--text-3);
-  display: flex; align-items: center; gap: 5px; text-align: left; overflow: hidden;
+  display: flex; align-items: center; gap: 5px; text-align: left; position: relative;
 }
 .chip > span:last-child { flex: 1 1 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .chip:hover { color: var(--text-2); border-color: var(--text-3); }
@@ -290,7 +290,11 @@ body.leiste-breit #leiste { flex-basis: 860px; width: 860px; }
 .chip.an.rolle-bob { background: var(--f-bob); border-color: var(--m-bob); }
 .chip.an.rolle-isp { background: var(--f-isp); border-color: var(--m-isp); }
 .chip.an.rolle-eve { background: var(--f-eve); border-color: var(--m-eve); }
-.chip.neu::after { content: ''; flex: 0 0 auto; width: 7px; height: 7px; border-radius: 50%; background: var(--neu-rand); }
+.chip.neu::after {
+  content: '!'; position: absolute; top: -7px; right: -7px; z-index: 1; width: 16px; height: 16px; border-radius: 50%;
+  background: var(--neu-rand); color: var(--flaeche); box-shadow: 0 0 0 2px var(--flaeche);
+  font-size: 11px; font-weight: 700; line-height: 16px; text-align: center; pointer-events: none;
+}
 .chip.beste { box-shadow: 0 0 0 1px var(--akzent); }
 .chip.beste:not(.an) { border-color: var(--akzent); color: var(--akzent); }
 
@@ -314,7 +318,7 @@ body.leiste-breit #leiste { flex-basis: 860px; width: 860px; }
 .art-karte.rolle-isp .art-sys { color: var(--m-isp); }
 .art-karte.rolle-eve .art-sys { color: var(--m-eve); }
 .art-titel { font-size: 12px; font-weight: 600; }
-.art-neu { font-size: 10.5px; font-weight: 600; color: var(--neu-text); background: var(--neu); border: 1px solid var(--neu-rand); border-radius: 3px; padding: 0 6px; }
+.art-neu { white-space: nowrap; font-size: 10.5px; font-weight: 600; color: var(--neu-text); background: var(--neu); border: 1px solid var(--neu-rand); border-radius: 3px; padding: 0 6px; }
 .art-gross { margin-left: auto; appearance: none; border: none; background: transparent; color: var(--text-3); cursor: pointer; width: 20px; height: 20px; display: flex; align-items: center; justify-content: center; padding: 0; flex: 0 0 auto; }
 .art-gross svg { width: 12px; height: 12px; }
 .art-gross svg path { fill: none; stroke: currentColor; stroke-width: 1.6; stroke-linecap: round; stroke-linejoin: round; }
@@ -343,6 +347,12 @@ body.leiste-breit .art-inhalt.voll { max-height: min(76vh, 900px); }
 .z { white-space: pre; padding: 0 10px; border-left: 3px solid transparent; }
 .z-neu { background: var(--neu); border-left-color: var(--neu-rand); }
 .z-alt { opacity: .42; }
+.z-rekon-kopf {
+  margin: 10px 0 4px; padding: 5px 8px 4px; border-top: 1px dashed var(--rand); font-family: var(--font-ui);
+  font-size: 10.5px; font-weight: 600; letter-spacing: .04em; text-transform: uppercase; color: var(--text-3);
+}
+.z-rekon-kopf span { display: block; font-weight: 400; letter-spacing: 0; text-transform: none; }
+.z-rekon { font-style: italic; }
 .z-kopf { color: var(--text-3); position: sticky; top: -4px; background: var(--kopf-bg); border-bottom: 1px solid var(--rand-2); }
 .z-gutter { display: inline-block; color: var(--text-3); margin-right: 10px; }
 .z-leer { font-family: var(--font-ui); font-size: 11.5px; color: var(--text-3); padding: 4px 10px; white-space: normal; line-height: 1.45; }

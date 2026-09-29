@@ -285,7 +285,14 @@ window.App = window.App || {};
     }
     const wahl = verfuegbar.find((x) => x.phase === gewaehlterAbschnitt[a.id]) || verfuegbar[verfuegbar.length - 1];
     const istNeu = wahl.tBis > von;
-    const html = wahl.zeilen.map((z) => `<div class="z${istNeu ? ' z-neu' : ''}">${App.faerbe(z) || '&nbsp;'}</div>`).join('');
+    let html = wahl.zeilen.map((z) => `<div class="z${istNeu ? ' z-neu' : ''}">${App.faerbe(z) || '&nbsp;'}</div>`).join('');
+    // rs BGP-Tabelle: die Abfrage zeigt nur das Zielpraefix, darunter die rekonstruierte Gesamtuebersicht
+    const erg = a.ergaenzung ? a.ergaenzung(sz.id, wahl) : null;
+    if (erg) {
+      html += `<div class="z-rekon-kopf" title="Nicht Teil der Originalausgabe. ${esc(erg.quelle)}">`
+        + `Loc-RIB gesamt · rekonstruiert, keine Originalausgabe<span>${esc(erg.quelle)}</span></div>`
+        + erg.zeilen.map((z) => `<div class="z z-rekon${istNeu ? ' z-neu' : ''}">${App.faerbe(z) || '&nbsp;'}</div>`).join('');
+    }
     const juengste = verfuegbar[verfuegbar.length - 1];
     let fuss = 'Abfrage ' + wahl.phase + ', ' + M.zeitText(wahl.tVon, 3) + '–' + M.zeitText(wahl.tBis, 3) + ' UTC';
     if (wahl !== juengste) fuss += ' · nicht die jüngste Abfrage';

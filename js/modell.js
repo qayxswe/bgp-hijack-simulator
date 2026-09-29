@@ -312,7 +312,8 @@ window.App = window.App || {};
   const ARTEFAKTE = [
     { id: 'rs-bgp', gruppe: 'rs', system: 'rs', titel: 'RIBs im RAM · BGP-Tabelle', typ: 'schnappschuss',
       befehl: 'vtysh -c "show bgp ipv4 unicast <Präfix>"', aufloesung: 'Abfragezeitpunkt',
-      quelle: (sz) => sz.ordner + '/rib-aus-dem-ram.txt', abschnitte: schnappschuss('rib-aus-dem-ram.txt') },
+      quelle: (sz) => sz.ordner + '/rib-aus-dem-ram.txt', abschnitte: schnappschuss('rib-aus-dem-ram.txt'),
+      ergaenzung: (szId, abschnitt) => locRibUebersicht(szId, abschnitt) },
     { id: 'rs-adj', gruppe: 'rs', system: 'rs', titel: 'RIBs im RAM · Adj-RIB-In je Nachbar', typ: 'schnappschuss',
       befehl: 'vtysh -c "show bgp ipv4 unicast neighbors <Adresse> received-routes"', aufloesung: 'Abfragezeitpunkt',
       quelle: (sz) => sz.ordner + '/adj-rib-in-rs.txt', abschnitte: schnappschuss('adj-rib-in-rs.txt') },
@@ -475,6 +476,40 @@ window.App = window.App || {};
     });
     if (!letzter || letzter.ev === 'W') return { vorhanden: false, t: letzter ? letzter.t : null };
     return { vorhanden: true, pfad: letzter.pfad, nh: letzter.nh, t: letzter.t };
+  }
+  // Gesamtuebersicht der Loc-RIB von rs zu einer Abfrage in der Form von "show bgp ipv4 unicast".
+  // Die Abfrage selbst (rib-aus-dem-ram.txt) fragt nur das Zielpraefix ab. Alle Pfade stammen
+  // woertlich aus den Adj-RIB-In-Abfragen derselben Phase (adj-rib-in-rs.txt), der Best Path
+  // aus der BMP-Ausleitung (Loc-RIB) zum Ende der Abfrage. Die Zeilen sind also rekonstruiert.
+  function locRibUebersicht(szId, abschnitt) {
+    const adj = abschnitte[szId]['adj-rib-in-rs.txt'].find((a) => a.phase === abschnitt.phase);
+    if (!adj) return null;
+    const pfade = new Map();   // praefix -> [{ nh, rest }]
+    adj.zeilen.forEach((z) => {
+      const m = /^ \*> (\d+\.\d+\.\d+\.\d+\/\d+)\s+(\d+\.\d+\.\d+\.\d+)\s/.exec(z);
+      if (!m) return;
+      if (!pfade.has(m[1])) pfade.set(m[1], []);
+      pfade.get(m[1]).push({ nh: m[2], rest: z.slice(z.indexOf(m[2], 4 + m[1].length)) });
+    });
+    const zahl = (pfx) => pfx.split(/[./]/).reduce((n, x, i) => (i < 4 ? n * 256 + +x : n * 64 + +x), 0);
+    const praefixe = Array.from(pfade.keys()).sort((x, y) => zahl(x) - zahl(y));
+    const zeilenAus = ['     Network          Next Hop            Metric LocPrf Weight Path'];
+    let anzahl = 0;
+    praefixe.forEach((pfx) => {
+      const bp = bestPathRs(pfx, abschnitt.tBis);
+      const liste = pfade.get(pfx).slice().sort((x, y) => (bp.vorhanden ? (y.nh === bp.nh) - (x.nh === bp.nh) : 0));
+      liste.forEach((p, i) => {
+        const best = bp.vorhanden && p.nh === bp.nh;
+        zeilenAus.push(' *' + (best ? '> ' : '  ') + (i === 0 ? pfx : '').padEnd(17) + p.rest);
+        anzahl++;
+      });
+    });
+    zeilenAus.push('', 'Displayed ' + praefixe.length + ' routes and ' + anzahl + ' total paths');
+    return {
+      zeilen: zeilenAus,
+      quelle: 'Pfade: Adj-RIB-In ' + adj.phase + ' (' + zeitText(adj.tVon, 0) + '–' + zeitText(adj.tBis, 0)
+        + ' UTC) · Best Path: BMP Loc-RIB bis ' + zeitText(abschnitt.tBis, 0) + ' UTC',
+    };
   }
   // Letzte Messung der Routing-Tabelle (show ip route 198.51.100.10) bis t.
   function routingEintrag(szId, vm, t) {
