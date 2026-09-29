@@ -225,41 +225,55 @@ window.App = window.App || {};
       + (neuGesamt ? ' · ' + neuGesamt + ' neue Einträge' : '');
   }
 
-  // Anzahl neuer Eintraege eines Artefakts im Schritt, ohne den Inhalt aufzubauen.
-  // Muss zu den Zaehlungen in logInhalt/schnappschussInhalt/dumpInhalt passen.
+  /* ---------------- Zeitfenster eines Schritts ----------------
+     Diese drei Hilfsfunktionen entscheiden je Artefakttyp, was "neu in diesem Schritt"
+     bedeutet. Sowohl neuAnzahl() (fuer die Chip-Punkte und "Nur Neues", ohne HTML
+     aufzubauen) als auch die *Inhalt-Funktionen darunter nutzen sie -- beide Seiten
+     koennen dadurch nicht mehr auseinanderlaufen. */
+  function logFenster(v, schritt) {
+    const eintraege = v.eintraege.filter((e) => e.t <= schritt.cursor)
+      .slice().sort((x, y) => (x.t - y.t) || (x.nr - y.nr));   // stabil: Zeit, dann Zeilennummer
+    const neu = eintraege.reduce((n, e) => n + (e.t > schritt.vorher ? 1 : 0), 0);
+    return { eintraege, neu };
+  }
+  function schnappschussFenster(alle, schritt) {
+    const verfuegbar = alle.filter((x) => x.tBis <= schritt.cursor);
+    if (!verfuegbar.length) return null;
+    const juengste = verfuegbar[verfuegbar.length - 1];
+    return { verfuegbar, juengste, neu: juengste.tBis > schritt.vorher };
+  }
+  const DUMP_ERSTER = 18 * 3600 + 45 * 60;   // erster Dump nach dem Neustart um 18:44:47
+  function dumpFenster(a, schritt) {
+    const letzter = Math.floor(schritt.cursor / 60) * 60;
+    return { letzter, neu: letzter >= DUMP_ERSTER && letzter > schritt.vorher && letzter === a.dump.t };
+  }
+
+  // Anzahl neuer Eintraege eines Artefakts im Schritt, ohne den Inhalt aufzubauen
+  // (fuer die Chip-Punkte in der Auswahl und "Nur Neues").
   function neuAnzahl(a, sz, schritt) {
-    const bis = schritt.cursor, von = schritt.vorher;
     if (a.typ === 'log') {
       const v = a.ansichten.find((x) => x.id === gewaehlteAnsicht[a.id]) || a.ansichten[0];
-      return v.eintraege.reduce((n, e) => n + (e.t > von && e.t <= bis ? 1 : 0), 0);
+      return logFenster(v, schritt).neu;
     }
     if (a.typ === 'schnappschuss') {
-      const verfuegbar = a.abschnitte(sz.id).filter((x) => x.tBis <= bis);
-      return verfuegbar.length && verfuegbar[verfuegbar.length - 1].tBis > von ? 1 : 0;
+      const fenster = schnappschussFenster(a.abschnitte(sz.id), schritt);
+      return fenster && fenster.neu ? 1 : 0;
     }
-    if (a.typ === 'tabellendump') {
-      const letzter = Math.floor(bis / 60) * 60;
-      return letzter > von && letzter === a.dump.t ? 1 : 0;
-    }
+    if (a.typ === 'tabellendump') return dumpFenster(a, schritt).neu ? 1 : 0;
     return 0;
   }
 
   function logInhalt(a, sz, schritt) {
-    const bis = schritt.cursor, von = schritt.vorher;
     const v = a.ansichten.find((x) => x.id === gewaehlteAnsicht[a.id]) || a.ansichten[0];
-    let eintraege = v.eintraege.filter((e) => e.t <= bis);
+    const { eintraege, neu } = logFenster(v, schritt);
     let leiste = '';
     if (a.ansichten.length > 1) {
       leiste = `<div class="art-leiste"><select class="ansicht-wahl">${a.ansichten.map((x) =>
         `<option value="${x.id}"${x === v ? ' selected' : ''}>${x.name}</option>`).join('')}</select></div>`;
     }
-    // stabile Reihenfolge: nach Zeit, bei Gleichstand nach Zeilennummer
-    eintraege = eintraege.slice().sort((x, y) => (x.t - y.t) || (x.nr - y.nr));
-    let neu = 0;
     const html = (v.kopf.length ? `<div class="z z-kopf">${esc(v.kopf[0])}</div>` : '')
       + (eintraege.length ? eintraege.map((e) => {
-        const istNeu = e.t > von;
-        if (istNeu) neu++;
+        const istNeu = e.t > schritt.vorher;
         const klasse = istNeu ? 'z z-neu' : (e.t < sz.fensterBeginn ? 'z z-alt' : 'z');
         const gutter = a.mrtZeit ? `<span class="z-gutter" title="Zeitstempel der Zeile (Unixzeit ${e.text.split('|')[1]})">${e.eigeneZeit}</span>` : '';
         return `<div class="${klasse}">${gutter}${App.faerbe(e.text)}</div>`;
@@ -274,40 +288,35 @@ window.App = window.App || {};
   }
 
   function schnappschussInhalt(a, sz, schritt) {
-    const bis = schritt.cursor, von = schritt.vorher;
     const alle = a.abschnitte(sz.id);
-    const verfuegbar = alle.filter((x) => x.tBis <= bis);
+    const fenster = schnappschussFenster(alle, schritt);
     const leiste = `<div class="art-leiste">Abfrage:
       ${alle.map((x) => {
-        const ok = x.tBis <= bis;
-        const aktiv = ok && ((gewaehlterAbschnitt[a.id] || (verfuegbar.length ? verfuegbar[verfuegbar.length - 1].phase : '')) === x.phase);
+        const ok = x.tBis <= schritt.cursor;
+        const aktiv = ok && ((gewaehlterAbschnitt[a.id] || (fenster ? fenster.juengste.phase : '')) === x.phase);
         return `<button class="phase-knopf${aktiv ? ' aktiv' : ''}"${ok ? ` data-phase="${x.phase}"` : ' disabled'} title="${ok ? 'Abfrage ' + x.phase + ', ' + M.zeitText(x.tVon, 3) + '–' + M.zeitText(x.tBis, 3) + ' UTC' : 'Abfrage ' + x.phase + ', ' + M.zeitText(x.tVon, 3) + ' UTC'}">${x.phase}</button>`;
       }).join('')}</div>`;
-    if (!verfuegbar.length) {
+    if (!fenster) {
       return { html: '<div class="z-leer">noch keine Abfrage</div>', neu: 0, fuss: 'keine Abfrage bis zu diesem Zeitpunkt', leiste };
     }
-    const wahl = verfuegbar.find((x) => x.phase === gewaehlterAbschnitt[a.id]) || verfuegbar[verfuegbar.length - 1];
-    const istNeu = wahl.tBis > von;
+    const wahl = fenster.verfuegbar.find((x) => x.phase === gewaehlterAbschnitt[a.id]) || fenster.juengste;
+    const istNeu = wahl.tBis > schritt.vorher;
     const html = wahl.zeilen.map((z) => `<div class="z${istNeu ? ' z-neu' : ''}">${App.faerbe(z) || '&nbsp;'}</div>`).join('');
-    const juengste = verfuegbar[verfuegbar.length - 1];
     let fuss = 'Abfrage ' + wahl.phase + ', ' + M.zeitText(wahl.tVon, 3) + '–' + M.zeitText(wahl.tBis, 3) + ' UTC';
-    if (wahl !== juengste) fuss += ' · nicht die jüngste Abfrage';
+    if (wahl !== fenster.juengste) fuss += ' · nicht die jüngste Abfrage';
     return { html, neu: istNeu ? 1 : 0, fuss, leiste };
   }
 
   function dumpInhalt(a, sz, schritt) {
-    const bis = schritt.cursor, von = schritt.vorher;
-    const erster = 18 * 3600 + 45 * 60;               // erster Dump nach dem Neustart um 18:44:47
-    const letzter = Math.floor(bis / 60) * 60;
+    const { letzter, neu } = dumpFenster(a, schritt);
     const naechster = letzter + 60;
-    if (letzter < erster) {
-      return { html: '<div class="z-leer">noch kein Dump</div>', neu: 0, fuss: 'nächster Dump ' + M.zeitText(erster, 0) };
+    if (letzter < DUMP_ERSTER) {
+      return { html: '<div class="z-leer">noch kein Dump</div>', neu: 0, fuss: 'nächster Dump ' + M.zeitText(DUMP_ERSTER, 0) };
     }
     const erhalten = a.dump.t;
-    const neu = letzter > von ? 1 : 0;
     if (letzter === erhalten) {
       const html = a.dump.zeilen.map((z) => `<div class="z${neu ? ' z-neu' : ''}">${App.faerbe(z)}</div>`).join('');
-      return { html, neu, fuss: 'Stand ' + M.zeitText(letzter, 0) + ' UTC · nächster Dump ' + M.zeitText(naechster, 0) };
+      return { html, neu: neu ? 1 : 0, fuss: 'Stand ' + M.zeitText(letzter, 0) + ' UTC · nächster Dump ' + M.zeitText(naechster, 0) };
     }
     const html = `<div class="z-leer">Dump ${M.zeitText(letzter, 0)} UTC nicht erhalten (erhalten: ${M.zeitText(erhalten, 0)} UTC)</div>`;
     return { html, neu: 0, fuss: 'Stand ' + M.zeitText(letzter, 0) + ' UTC (nicht erhalten) · nächster Dump ' + M.zeitText(naechster, 0) };
