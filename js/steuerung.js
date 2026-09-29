@@ -176,7 +176,15 @@ window.App = window.App || {};
         reihen.push(zeile('clienta', 'curl', App.faerbe(m.http) + ' · „' + m.seite + '“', eve ? 'ev-eve' : 'ev-bob'));
         reihen.push(zeile('clienta', 'traceroute', 'Hop 2 ' + App.faerbe(m.hop2) + ' · ping ' + m.ping.replace(/ packets transmitted, (\d+) received.*$/, '/$1')));
       }
-      details = `<div class="ev-kopf">Abfragen ${M.zeitText(s.messungVon, 3)}–${M.zeitText(s.cursor, 3)} UTC</div>${reihen.join('')}`;
+      let handschlag = '';
+      if (s.phase === 'T0' && App.netz.istHandschlagAn()) {
+        const hz = M.sitzungsaufbau.map((p) => `<div class="ev-zeile"><span class="ev-zeit">${p.zeit}</span>
+            <span class="ev-weg">${knotenName(p.von)} → ${knotenName(p.an)}</span>
+            <span class="ev-art">${p.protokoll}</span>
+            <span class="ev-inhalt">${App.faerbe(p.info)}</span></div>`).join('');
+        handschlag = `<div class="ev-kopf">Sitzungsaufbau · rs_enp0s8.pcap · Neustart vor T0</div>${hz}`;
+      }
+      details = `<div class="ev-kopf">Abfragen ${M.zeitText(s.messungVon, 3)}–${M.zeitText(s.cursor, 3)} UTC</div>${reihen.join('')}${handschlag}`;
     }
     dom.phaseChip.innerHTML = `<b>${s.phase}</b> · ${M.PHASEN[s.phase].name}<span class="chip-art">${M.PHASEN[s.phase].art}</span>`;
     dom.phaseChip.className = 'phase-chip phase-' + M.PHASEN[s.phase].art.toLowerCase();
@@ -185,6 +193,7 @@ window.App = window.App || {};
     dom.text.textContent = s.text;
     dom.details.innerHTML = details;
     dom.zeit.textContent = zeitAnzeige(s) + ' UTC';
+    if (dom.handschlagBtn) dom.handschlagBtn.classList.toggle('versteckt', s.phase !== 'T0');
   }
 
   /* ---------------- Bild ---------------- */
@@ -216,6 +225,7 @@ window.App = window.App || {};
 
   App.steuerung = {
     init, wechsleSzenario, geheZu, neuZeichnen: () => { letzterSchritt = null; bild(); },
+    wiederholen: () => { letzterSchritt = null; geheZu(index, false); },
     szenario: () => szId,
   };
 })(window.App);
