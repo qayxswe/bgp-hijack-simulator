@@ -36,6 +36,8 @@ window.App = window.App || {};
   let neuIds = new Set();           // Artefakte mit neuen Zeilen im aktuellen Schritt
   let nurNeue = false;              // Anzeige auf Artefakte mit neuen Zeilen beschraenkt, statt Auswahl
   let vollbildId = null;            // Artefakt, das gerade ganzflaechig gezeigt wird
+  let vollbildMitNetz = false;      // Netzplan im ganzflaechigen Fenster daneben/darueber
+  let netzHeimat = null;            // urspruenglicher Platz von .netz-wrap in der Buehne
   let fokusId = null;               // Nebeneinander: nur dieses Artefakt, volle Hoehe neben dem Netzplan
   const gewaehlteAnsicht = {};      // artefaktId -> Ansicht (bleibt ueber die Schritte erhalten)
   const gewaehlterAbschnitt = {};   // artefaktId -> Phase (manuelle Auswahl bis zum naechsten Schritt)
@@ -65,6 +67,15 @@ window.App = window.App || {};
     laden();
     if (nurNeueEl) nurNeueEl.addEventListener('click', () => { nurNeue = !nurNeue; nachAuswahl(); listeEl.scrollTop = 0; });
     document.getElementById('vollbildZu').addEventListener('click', vollbildSchliessen);
+    document.getElementById('vollbildNetzKnopf').addEventListener('click', () => vollbildNetz(!vollbildMitNetz));
+    try { vollbildMitNetz = localStorage.getItem('bgp-sim-vollbild-netz') === '1'; } catch (e) { /* egal */ }
+    vollbildTrennerInit();
+    if (window.ResizeObserver) new ResizeObserver(vollbildAusrichten).observe(document.getElementById('vollbildKarte'));
+    document.addEventListener('keydown', (e) => {
+      if (!vollbildId || e.ctrlKey || e.altKey || e.metaKey) return;
+      if (e.target && /INPUT|SELECT|TEXTAREA/.test(e.target.tagName)) return;
+      if (e.key === 'n' || e.key === 'N') { e.preventDefault(); vollbildNetz(!vollbildMitNetz); }
+    });
     vollbildEl.addEventListener('click', (e) => { if (e.target === vollbildEl) vollbildSchliessen(); });
     document.addEventListener('keydown', (e) => {
       if (e.key !== 'Escape') return;
@@ -94,15 +105,82 @@ window.App = window.App || {};
      Oeffnet sich beim Klick in den Inhalt eines Artefakts; bleibt beim Schrittwechsel offen
      und aktualisiert sich mit (siehe Ende von zeichnen()), solange das Artefakt weiter
      ausgewaehlt ist -- sonst schliesst sie sich von selbst. */
-  function vollbildOeffnen(id, titel, html) {
+  // neuerSchritt: nach einem Schrittwechsel zur ersten neuen Zeile springen (wie in der Karte),
+  // sonst die Scrollposition behalten (z. B. beim Umschalten einer Ansicht).
+  function vollbildOeffnen(id, titel, html, neuerSchritt) {
+    const warOffen = !!vollbildId;
+    const alt = vollbildInhaltEl.scrollTop;
     vollbildId = id;
     vollbildTitelEl.textContent = titel;
     vollbildInhaltEl.innerHTML = html;
+    if (warOffen && !neuerSchritt) vollbildInhaltEl.scrollTop = alt;
+    else {
+      const erstes = vollbildInhaltEl.querySelector('.z-neu');
+      vollbildInhaltEl.scrollTop = erstes ? Math.max(0, erstes.offsetTop - vollbildInhaltEl.offsetTop - 40) : 0;
+    }
     vollbildEl.classList.remove('versteckt');
+    if (!warOffen) vollbildNetz(vollbildMitNetz, true);
   }
   function vollbildSchliessen() {
     vollbildId = null;
+    netzZurueck();
     vollbildEl.classList.add('versteckt');
+  }
+
+  // Netzplan im ganzflaechigen Fenster: das echte .netz-wrap wird hineingehaengt (bleibt so
+  // live: Animation, Schrittwechsel, Klick auf Systeme) und beim Ausschalten/Schliessen an
+  // seinen Platz in der Buehne zurueckgestellt.
+  function vollbildNetz(an, ohneMerken) {
+    vollbildMitNetz = !!an;
+    if (!ohneMerken) try { localStorage.setItem('bgp-sim-vollbild-netz', vollbildMitNetz ? '1' : '0'); } catch (e) { /* egal */ }
+    const knopf = document.getElementById('vollbildNetzKnopf');
+    knopf.classList.toggle('an', vollbildMitNetz);
+    knopf.setAttribute('aria-pressed', String(vollbildMitNetz));
+    vollbildEl.classList.toggle('mit-netz', vollbildMitNetz);
+    if (vollbildMitNetz && vollbildId) {
+      const wrap = document.querySelector('.netz-wrap');
+      if (!netzHeimat) netzHeimat = { eltern: wrap.parentNode, danach: wrap.nextSibling };
+      document.getElementById('vollbildNetz').appendChild(wrap);
+      vollbildAusrichten();
+    } else {
+      netzZurueck();
+    }
+  }
+  function netzZurueck() {
+    if (!netzHeimat) return;
+    netzHeimat.eltern.insertBefore(document.querySelector('.netz-wrap'), netzHeimat.danach);
+    netzHeimat = null;
+  }
+  // Breites Fenster: Netzplan links daneben; hohes Fenster: Netzplan darueber.
+  function vollbildAusrichten() {
+    const karte = document.getElementById('vollbildKarte');
+    const r = karte.getBoundingClientRect();
+    if (!r.width) return;
+    document.getElementById('vollbildKoerper').classList.toggle('stapel', r.width / r.height < 1.25);
+  }
+  function vollbildTrennerInit() {
+    const t = document.getElementById('vollbildTrenner');
+    const koerper = document.getElementById('vollbildKoerper');
+    t.addEventListener('pointerdown', (e) => {
+      e.preventDefault();
+      try { t.setPointerCapture(e.pointerId); } catch (err) { /* egal */ }
+      t.classList.add('zieht');
+      const r = koerper.getBoundingClientRect();
+      const stapel = koerper.classList.contains('stapel');
+      const bewegen = (ev) => {
+        const anteil = stapel ? (ev.clientY - r.top) / r.height : (ev.clientX - r.left) / r.width;
+        koerper.style.setProperty('--vb-netz', Math.round(Math.min(0.8, Math.max(0.2, anteil)) * 1000) / 10 + '%');
+      };
+      const ende = () => {
+        t.classList.remove('zieht');
+        t.removeEventListener('pointermove', bewegen);
+        t.removeEventListener('pointerup', ende);
+        t.removeEventListener('pointercancel', ende);
+      };
+      t.addEventListener('pointermove', bewegen);
+      t.addEventListener('pointerup', ende);
+      t.addEventListener('pointercancel', ende);
+    });
   }
   // Groesse per Griff unten rechts per Pointer-Events ziehen (statt natives CSS resize, das
   // sich in dieser Testumgebung nicht per Skript ausloesen liesse und weniger Kontrolle gibt).
@@ -297,7 +375,7 @@ window.App = window.App || {};
         else inh.scrollTop = inh.scrollHeight;
       }
       // Ganzflaechige Ansicht bleibt beim Schrittwechsel offen und zieht mit.
-      if (vollbildId === a.id) vollbildOeffnen(a.id, a.system + ' · ' + a.titel, erg.html);
+      if (vollbildId === a.id) vollbildOeffnen(a.id, a.system + ' · ' + a.titel, erg.html, neuerSchritt);
     });
     if (vollbildId && !gewaehlt.some((a) => a.id === vollbildId)) vollbildSchliessen();
     if (fokusId) zaehlerEl.textContent = '';

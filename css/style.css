@@ -356,7 +356,11 @@ body.leiste-breit .art-inhalt { max-height: 400px; }
 .art-inhalt.voll { max-height: min(72vh, 760px); }
 body.leiste-breit .art-inhalt.voll { max-height: min(76vh, 900px); }
 .z { white-space: pre; padding: 0 10px; border-left: 3px solid transparent; }
-.z-neu { background: var(--neu-zeile-bg); border-color: var(--neu-rand); border-width: 1px 1px 1px 3px; border-style: solid; }
+/* Neue Zeilen: ein gemeinsamer Rahmen um jede zusammenhaengende Gruppe statt um jede Zeile.
+   Oben nur an der ersten Zeile der Gruppe, unten nur an der letzten. */
+.z-neu { background: var(--neu-zeile-bg); border-color: var(--neu-rand); border-style: solid; border-width: 0 1px 0 3px; }
+.z-neu:first-child, :not(.z-neu) + .z-neu { border-top-width: 1px; }
+.z-neu:last-child, .z-neu:not(:has(+ .z-neu)) { border-bottom-width: 1px; }
 .z-alt { opacity: .66; }
 .z-kopf { color: var(--text-3); position: sticky; top: -4px; background: var(--kopf-bg); border-bottom: 1px solid var(--rand-2); }
 .z-gutter { display: inline-block; color: var(--text-3); margin-right: 10px; }
@@ -446,8 +450,25 @@ dialog#hilfe code, kbd { font-family: var(--font-mono); font-size: 11.5px; backg
   appearance: none; border: none; background: transparent; color: var(--text-3); font-size: 24px; line-height: 1; cursor: pointer;
 }
 .vollbild-kopf button:hover { color: var(--text); }
+.vollbild-netz-knopf {
+  margin-left: auto; font-size: 12px !important; font-weight: 600; padding: 3px 10px; border-radius: 5px;
+  border: 1px solid var(--rand) !important; color: var(--text-2) !important;
+}
+.vollbild-netz-knopf.an { background: var(--akzent-weich) !important; border-color: var(--akzent) !important; color: var(--akzent) !important; }
+
+/* Koerper: Log allein, oder mit Netzplan daneben (breites Fenster) bzw. darueber (hohes Fenster).
+   Der Netzplan ist dabei das echte .netz-wrap aus der Buehne, fuer die Dauer verschoben. */
+.vollbild-koerper { flex: 1 1 auto; min-height: 0; display: flex; flex-direction: row; }
+.vollbild-koerper.stapel { flex-direction: column; }
+.vollbild-netz, .vollbild-trenner { display: none; }
+.vollbild.mit-netz .vollbild-netz { display: flex; flex: 0 0 var(--vb-netz, 50%); min-width: 0; min-height: 0; background: var(--bg); }
+.vollbild.mit-netz .vollbild-trenner { display: block; flex: 0 0 6px; background: var(--flaeche-2); cursor: col-resize; touch-action: none;
+  border-left: 1px solid var(--rand); border-right: 1px solid var(--rand); }
+.vollbild.mit-netz .stapel .vollbild-trenner { cursor: row-resize; border: none; border-top: 1px solid var(--rand); border-bottom: 1px solid var(--rand); }
+.vollbild-trenner:hover, .vollbild-trenner.zieht { background: var(--akzent) !important; }
+.vollbild-netz .netz-wrap { flex: 1 1 auto; }
 .vollbild-inhalt {
-  flex: 1 1 auto; overflow: auto; padding: 8px 0; font-family: var(--font-mono); font-size: 13px; line-height: 1.7; color: var(--text);
+  flex: 1 1 auto; min-width: 0; min-height: 0; overflow: auto; padding: 8px 0; font-family: var(--font-mono); font-size: 13px; line-height: 1.7; color: var(--text);
   background: var(--inhalt-bg);
 }
 .vollbild-inhalt .z { padding: 0 20px; }

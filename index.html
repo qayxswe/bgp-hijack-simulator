@@ -98,7 +98,8 @@
     alle Artefakte, die in diesem Schritt neue Zeilen haben; in der Auswahl sind sie mit einem Punkt markiert, das zentrale Artefakt des Schritts mit „!“. Abfragen zeigen die letzte Abfrage zu T0, T2 oder T4.
     rib.mrt zeigt den letzten Dump zur vollen Minute; erhalten ist nur der Stand von 18:47:00.
     Ein Klick auf ein System im Netzplan zeigt dessen Konfiguration; das Info-Fenster laesst sich an
-    der Kopfzeile verschieben. Ein Klick in den Inhalt eines Artefakts oeffnet es ganzflaechig.
+    der Kopfzeile verschieben. Ein Klick in den Inhalt eines Artefakts oeffnet es ganzflaechig; dort zeigt der Knopf „Netzplan“
+    (oder <kbd>N</kbd>) den Netzplan zum aktuellen Schritt daneben bzw. darueber, mit verschiebbarer Aufteilung.
     Der Knopf <b>⧉</b> an einem Artefakt zeigt es allein ueber die volle Hoehe neben dem Netzplan; <kbd>Esc</kbd> fuehrt zurueck.
     Die Breite zwischen Netzplan und Seitenleiste laesst sich am Trenner ziehen, ein Doppelklick setzt sie zurueck.</p>
   <h3>Zeitliche Einordnung</h3>
@@ -119,9 +120,14 @@
   <div class="vollbild-karte" id="vollbildKarte">
     <div class="vollbild-kopf">
       <span id="vollbildTitel"></span>
+      <button id="vollbildNetzKnopf" class="vollbild-netz-knopf" aria-pressed="false" title="Netzplan zum aktuellen Schritt daneben zeigen (N)">Netzplan</button>
       <button id="vollbildZu" title="Schließen (Esc)">&times;</button>
     </div>
-    <div class="vollbild-inhalt" id="vollbildInhalt"></div>
+    <div class="vollbild-koerper" id="vollbildKoerper">
+      <div class="vollbild-netz" id="vollbildNetz"></div>
+      <div class="vollbild-trenner" id="vollbildTrenner" title="Ziehen: Aufteilung ändern"></div>
+      <div class="vollbild-inhalt" id="vollbildInhalt"></div>
+    </div>
     <div class="vollbild-groesse" id="vollbildGroesse" title="Größe ändern">
       <svg viewBox="0 0 16 16"><path d="M14 3 3 14M14 8 8 14M14 13l-1 1"/></svg>
     </div>
