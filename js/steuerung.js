@@ -19,7 +19,6 @@ window.App = window.App || {};
 
   function init(refs) {
     dom = refs;
-    dom.spielen.innerHTML = SYMBOL_SPIELEN;
     dom.spielen.addEventListener('click', () => setzeSpielen(!spielt));
     dom.vor.addEventListener('click', () => geheZu(index + 1));
     dom.zurueck.addEventListener('click', () => geheZu(index - 1));
@@ -44,43 +43,52 @@ window.App = window.App || {};
   function wechsleSzenario(id) {
     if (!M.SZENARIEN[id]) return;
     szId = id;
-    setzeSpielen(false);
     App.netz.infoAus();
     phasenleisteAufbauen();
     ablaufAufbauen();
     geheZu(0);
   }
 
+  // geheZu bewegt sich zwischen Schritten (← / →, Ablauf, Phasenleiste); das Abspielen der
+  // Enthuellungs-Animation eines Schritts startet dabei automatisch mit. Der Spielen-Knopf
+  // steuert ausschliesslich diese Animation (anhalten/fortsetzen/wiederholen), nicht die
+  // Schrittnavigation -- die beiden sind jetzt getrennt.
   function geheZu(i, ohneAnimation) {
     const n = sz().schritte.length;
-    if (i < 0 || i >= n) { if (spielt && i >= n) setzeSpielen(false); return; }
+    if (i < 0 || i >= n) return;
     index = i;
     fortschritt = ohneAnimation ? 1 : 0;
+    spielt = !ohneAnimation;
     if (!ohneAnimation) starteAnimation();
+    aktualisiereSpielKnopf();
     bild();
   }
   function geheZuPhase(p) {
     const i = sz().schritte.findIndex((s) => s.phase === p);
-    if (i >= 0) { setzeSpielen(false); geheZu(i); }
+    if (i >= 0) geheZu(i);
   }
 
   const SYMBOL_SPIELEN = '<svg viewBox="0 0 16 16"><polygon points="4,2.5 4,13.5 13,8"/></svg>';
   const SYMBOL_PAUSE = '<svg viewBox="0 0 16 16"><rect x="3.5" y="3" width="3" height="10"/><rect x="9.5" y="3" width="3" height="10"/></svg>';
+  const SYMBOL_WIEDERHOLEN = '<svg viewBox="0 0 16 16"><path d="M3.3 8a4.7 4.7 0 1 1 1.4 3.35" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/><polygon points="3,5 3.3,8.4 6.5,7.5"/></svg>';
 
-  // "Abspielen" zeigt genau einen Schritt mit Animation und haelt danach automatisch an
-  // (nicht mehrere Schritte hintereinander). Erneutes Abspielen/Leertaste geht zum naechsten
-  // Schritt; am Ende der Liste beginnt es wieder vorn.
+  // Zeigt/beschriftet den Spielen-Knopf passend zum Zustand der Animation dieses Schritts:
+  // fertig -> Wiederholen, laeuft -> Anhalten, angehalten mitten drin -> Fortsetzen.
+  function aktualisiereSpielKnopf() {
+    if (fortschritt >= 1) { dom.spielen.innerHTML = SYMBOL_WIEDERHOLEN; dom.spielen.title = 'Schritt wiederholen (Leertaste)'; }
+    else if (spielt) { dom.spielen.innerHTML = SYMBOL_PAUSE; dom.spielen.title = 'Anhalten (Leertaste)'; }
+    else { dom.spielen.innerHTML = SYMBOL_SPIELEN; dom.spielen.title = 'Fortsetzen (Leertaste)'; }
+  }
+
   function setzeSpielen(an) {
-    spielt = an;
-    dom.spielen.innerHTML = spielt ? SYMBOL_PAUSE : SYMBOL_SPIELEN;
-    dom.spielen.title = spielt ? 'Anhalten (Leertaste)' : 'Nächster Schritt (Leertaste)';
-    if (spielt) {
-      if (fortschritt >= 1) {
-        if (index >= sz().schritte.length - 1) geheZu(0); else geheZu(index + 1);
-      } else {
-        starteAnimation();
-      }
+    if (an) {
+      if (fortschritt >= 1) fortschritt = 0;   // fertig: von vorn
+      spielt = true;
+      starteAnimation();
+    } else {
+      spielt = false;   // an aktueller Stelle einfrieren
     }
+    aktualisiereSpielKnopf();
   }
 
   function starteAnimation() {
@@ -92,12 +100,12 @@ window.App = window.App || {};
     if (letzteZeit == null) letzteZeit = ts;
     const dt = Math.min(0.1, (ts - letzteZeit) / 1000);
     letzteZeit = ts;
-    if (fortschritt < 1) {
+    if (fortschritt < 1 && spielt) {
       fortschritt = Math.min(1, fortschritt + dt / ANIM_SEKUNDEN);
       bild();
-      if (fortschritt >= 1 && spielt) setzeSpielen(false);   // nach dem Schritt automatisch anhalten
+      if (fortschritt >= 1) { spielt = false; aktualisiereSpielKnopf(); }
     }
-    if (fortschritt < 1) requestAnimationFrame(takt); else animiert = false;
+    if (fortschritt < 1 && spielt) requestAnimationFrame(takt); else animiert = false;
   }
 
   /* ---------------- Phasenleiste ---------------- */
@@ -119,7 +127,7 @@ window.App = window.App || {};
         t.className = 'tick art-' + s.art;
         t.dataset.i = s.index;
         t.title = zeitAnzeige(s) + ' UTC · ' + s.titel;
-        t.addEventListener('click', () => { setzeSpielen(false); geheZu(s.index); });
+        t.addEventListener('click', () => geheZu(s.index));
         ticks.appendChild(t);
       });
       dom.phasen.appendChild(seg);
@@ -133,7 +141,7 @@ window.App = window.App || {};
       z.className = 'ablauf-zeile art-' + s.art;
       z.dataset.i = s.index;
       z.innerHTML = `<span class="ab-phase">${s.phase}</span><span class="ab-zeit">${zeitAnzeige(s)}</span><span class="ab-titel">${s.titel}</span>`;
-      z.addEventListener('click', () => { setzeSpielen(false); geheZu(s.index); });
+      z.addEventListener('click', () => geheZu(s.index));
       dom.ablauf.appendChild(z);
     });
   }
@@ -160,21 +168,24 @@ window.App = window.App || {};
     } else if (s.art === 'befehl') {
       details = `<div class="ev-kopf">hijacker · journalctl -t sudo</div><div class="ev-roh">${App.faerbe(s.befehl)}</div>`;
     } else {
-      const zeile = (sys, art, inhalt, klasse) => `<div class="ev-zeile"><span class="ev-sys">${sys}</span>`
-        + `<span class="ev-art ${klasse || ''}">${art}</span><span class="ev-inhalt">${inhalt}</span></div>`;
+      // Jede Zeile: wer fragt was ab (Befehl + Ziel), dann das Ergebnis mit Pfeil --
+      // beantwortet "wer hat wohin eine Abfrage gemacht".
+      const zeile = (sys, befehl, ergebnis, klasse) => `<div class="ev-zeile"><span class="ev-sys">${sys}</span>`
+        + `<span class="ev-art ev-befehl-art ${klasse || ''}">${befehl}</span><span class="ev-inhalt">${ergebnis}</span></div>`;
       const reihen = [];
       const bp = M.bestPathRs(z.praefix, s.cursor);
-      reihen.push(zeile('rs', 'Loc-RIB', bp.vorhanden
-        ? App.faerbe(z.praefix + ' Pfad ' + bp.pfad + ' NH ' + bp.nh) : App.faerbe(z.praefix) + ' —'));
+      reihen.push(zeile('rs', 'Loc-RIB ' + z.praefix, bp.vorhanden
+        ? '→ ' + App.faerbe('Pfad ' + bp.pfad + ' · NH ' + bp.nh) : '→ kein Eintrag'));
       ['asa', 'asb'].forEach((vm) => {
         const r = M.routingEintrag(z.id, vm, s.cursor);
-        if (r) reihen.push(zeile(vm, 'show ip route', App.faerbe(r.praefix + (r.nh.startsWith('directly') ? ' directly connected, ' + r.schnittstelle : ' via ' + r.nh))));
+        if (r) reihen.push(zeile(vm, 'ip route 198.51.100.10', '→ ' + App.faerbe(r.praefix) + ' '
+          + App.faerbe(r.nh.startsWith('directly') ? 'directly connected, ' + r.schnittstelle : 'via ' + r.nh)));
       });
       const m = M.messungClienta(z.id, s.cursor);
       if (m) {
         const eve = m.hop2 === '192.0.2.66';
-        reihen.push(zeile('clienta', 'curl', App.faerbe(m.http) + ' · „' + m.seite + '“', eve ? 'ev-eve' : 'ev-bob'));
-        reihen.push(zeile('clienta', 'traceroute', 'Hop 2 ' + App.faerbe(m.hop2) + ' · ping ' + m.ping.replace(/ packets transmitted, (\d+) received.*$/, '/$1')));
+        reihen.push(zeile('clienta', 'curl 198.51.100.10', '→ ' + App.faerbe(m.http) + ' · „' + m.seite + '“', eve ? 'ev-eve' : 'ev-bob'));
+        reihen.push(zeile('clienta', 'traceroute 198.51.100.10', '→ Hop 2 ' + App.faerbe(m.hop2) + ' · ping ' + m.ping.replace(/ packets transmitted, (\d+) received.*$/, '/$1')));
       }
       let handschlag = '';
       if (s.phase === 'T0' && App.netz.istHandschlagAn()) {
