@@ -295,16 +295,16 @@ window.App = window.App || {};
 
   function befehlZeit(sz, phase) { const s = sz.schritte.find((x) => x.phase === phase && x.art === 'befehl'); return s ? s.cursor : Infinity; }
 
-  function zustaende(sz, schritt) {
-    const t = schritt.cursor;
-    // rs: Best Path je Praefix laut BMP (Loc-RIB) -- Angriffspraefix plus Ausgangszustand
+  // Kontrollebene: rs (Best Path je Praefix) und die eigene Ankuendigung jedes Routers.
+  function kontrollZustaende(sz, t) {
     setzeRs(rsZeilenBauen(sz, t));
-    // Router: eigene Ankuendigung laut Konfiguration bzw. sudo-Protokoll
     setze('k:asa', 'network 203.0.113.0/24', '', '');
     setze('k:asb', 'network 198.51.96.0/20', 'RS-OUT: 64496 64496 64496', '');
     const aktiv = t >= befehlZeit(sz, 'T1') && t < befehlZeit(sz, 'T3');
     setze('k:hijacker', aktiv ? 'network ' + sz.praefix : 'network —', '', aktiv ? 'var(--m-eve)' : '');
-    // Datenebene: Routing-Tabellen und Messung
+  }
+  // Datenebene: Routing-Tabellen von asa/asb und die Messung von clienta.
+  function datenZustaende(sz, t) {
     ['asa', 'asb'].forEach((vm) => {
       const r = M.routingEintrag(sz.id, vm, t);
       if (!r) { setze('d:' + vm, '198.51.100.10: —', 'Routing-Tabelle', ''); return; }
@@ -315,11 +315,20 @@ window.App = window.App || {};
     const m = M.messungClienta(sz.id, t);
     if (m) setze('d:clienta', m.http, 'Hop 2 ' + m.hop2 + ' · Messung ' + m.phase, m.hop2 === '192.0.2.66' ? 'var(--m-eve)' : 'var(--m-bob)');
     else setze('d:clienta', '', '', '');
+  }
+  // Zugriffe auf die beiden Webserver bis zu diesem Zeitpunkt im Szenario.
+  function webserverZustaende(sz, t) {
     [['d:weblegit', 'weblegit-log', 'var(--m-bob)'], ['d:webevil', 'webevil-log', 'var(--m-eve)']].forEach(([k, id, farbe]) => {
       const liste = M.ARTEFAKT[id].ansichten[0].eintraege.filter((e) => e.t <= t && e.t > sz.fensterBeginn);
       if (liste.length) setze(k, 'GET ' + M.zeitText(liste[liste.length - 1].t, 0), 'access.log · ' + liste.length + ' Zugriff' + (liste.length > 1 ? 'e' : ''), farbe);
       else setze(k, '', 'access.log · 0 Zugriffe', '');
     });
+  }
+  function zustaende(sz, schritt) {
+    const t = schritt.cursor;
+    kontrollZustaende(sz, t);
+    datenZustaende(sz, t);
+    webserverZustaende(sz, t);
   }
 
   /* ---------------- Info-Karte ---------------- */
