@@ -29,6 +29,7 @@
   --neu: #FFF6D8;
   --neu-rand: #D1A01F;
   --neu-text: #6b4f00;
+  --neu-zeile-bg: #e4e7ec;
   --tick-befehl: #e8cfc5;
   --tick-fertig: #aab2be;
   --scroll-daumen: #c8ced7;
@@ -51,7 +52,7 @@
     --m-rs: #4CC79E; --f-rs: #12241f; --m-bob: #6FA8E0; --f-bob: #17212f; --m-isp: #9aa2ad; --f-isp: #21252b;
     --m-eve: #E0895D; --f-eve: #2b1a13; --seg: #6b7280; --sitzung: #545c68;
     --akzent: #4CC79E; --akzent-weich: #12241f; --akzent-hover: #1a3a31; --akzent-stark: #3ddca8;
-    --neu: #3a2f10; --neu-rand: #c9a13a; --neu-text: #eecf7e;
+    --neu: #3a2f10; --neu-rand: #c9a13a; --neu-text: #eecf7e; --neu-zeile-bg: #23272e;
     --tick-befehl: #3c2c23; --tick-fertig: #454c58; --scroll-daumen: #333a44; --scroll-daumen-hover: #454c58;
     --sx-zeit: #7FB4E8; --sx-ip: #D4AE5C; --sx-praefix: #E68F63; --sx-as: #4CC79E; --sx-schluessel: #B29CE0;
     color-scheme: dark; }
@@ -61,7 +62,7 @@
   --m-rs: #4CC79E; --f-rs: #12241f; --m-bob: #6FA8E0; --f-bob: #17212f; --m-isp: #9aa2ad; --f-isp: #21252b;
   --m-eve: #E0895D; --f-eve: #2b1a13; --seg: #6b7280; --sitzung: #545c68;
   --akzent: #4CC79E; --akzent-weich: #12241f; --akzent-hover: #1a3a31; --akzent-stark: #3ddca8;
-  --neu: #3a2f10; --neu-rand: #c9a13a; --neu-text: #eecf7e;
+  --neu: #3a2f10; --neu-rand: #c9a13a; --neu-text: #eecf7e; --neu-zeile-bg: #23272e;
   --tick-befehl: #3c2c23; --tick-fertig: #454c58; --scroll-daumen: #333a44; --scroll-daumen-hover: #454c58;
   --sx-zeit: #7FB4E8; --sx-ip: #D4AE5C; --sx-praefix: #E68F63; --sx-as: #4CC79E; --sx-schluessel: #B29CE0;
   color-scheme: dark; }
@@ -172,14 +173,14 @@ svg#netz { width: 100%; height: 100%; display: block; }
 .ebene-titel { font-family: var(--font-ui); font-size: 11px; font-weight: 600; letter-spacing: .12em; fill: var(--text-2); }
 .ebene-sub { font-family: var(--font-mono); font-size: 10px; fill: var(--text-3); }
 .legende-text { font-family: var(--font-ui); font-size: 10.5px; fill: var(--text-2); }
-.legende-as { font-family: var(--font-mono); font-size: 10px; fill: var(--text-2); }
+.legende-as { font-family: var(--font-mono); font-size: 11.5px; fill: var(--text-2); }
 
 .sitzung { stroke: var(--sitzung); stroke-width: 1.4; stroke-dasharray: 5 4; }
 .bus { stroke: var(--seg); stroke-width: 6; stroke-linecap: round; }
 .anschluss { stroke: var(--seg); stroke-width: 2; }
 .anschluss-punkt { fill: var(--flaeche); stroke: var(--seg); stroke-width: 2; }
 .zugang { stroke: var(--rc); stroke-width: 2; }
-.segment-text { font-family: var(--font-mono); font-size: 10px; fill: var(--text-3); }
+.segment-text { font-family: var(--font-mono); font-size: 11.5px; fill: var(--text-3); }
 .flugbahn { fill: none; stroke-width: 2.2; stroke-opacity: .5; stroke-linejoin: round; }
 
 .knoten { cursor: pointer; transition: opacity .2s ease; }
@@ -191,9 +192,9 @@ svg#netz { width: 100%; height: 100%; display: block; }
 .knoten.puls .knoten-kasten { animation: puls 1.1s ease-in-out infinite; }
 @keyframes puls { 0%, 100% { stroke-width: 1.2; } 50% { stroke-width: 3.5; } }
 .knoten-titel { font-family: var(--font-ui); font-size: 13px; font-weight: 600; fill: var(--text); }
-.knoten-sub { font-family: var(--font-mono); font-size: 10px; fill: var(--text-3); }
-.knoten-zustand { font-family: var(--font-mono); font-size: 10.5px; font-weight: 600; fill: var(--text); }
-.knoten-zustand-2 { font-family: var(--font-mono); font-size: 9.5px; fill: var(--text-3); }
+.knoten-sub { font-family: var(--font-mono); font-size: 12px; fill: var(--text-3); }
+.knoten-zustand { font-family: var(--font-mono); font-size: 12.5px; font-weight: 600; fill: var(--text); }
+.knoten-zustand-2 { font-family: var(--font-mono); font-size: 11px; fill: var(--text-3); }
 
 /* ---------- Info-Karte eines Systems ---------- */
 .edge-info {
@@ -204,6 +205,7 @@ svg#netz { width: 100%; height: 100%; display: block; }
 .edge-info.hidden { display: none; }
 .ei-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 4px; }
 .ei-title { font-family: var(--font-mono); font-size: 14px; font-weight: 600; }
+.ei-head { cursor: move; user-select: none; }
 .ei-close { appearance: none; border: none; background: transparent; color: var(--text-3); font-size: 20px; line-height: 1; cursor: pointer; }
 .ei-close:hover { color: var(--text); }
 .ei-rolle { font-size: 12px; color: var(--text-2); margin-bottom: 8px; }
@@ -246,6 +248,9 @@ body.leiste-breit #leiste { flex-basis: 860px; width: 860px; }
 .filter-knopf { border: 1px solid var(--rand); border-radius: 4px; padding: 2px 8px; white-space: nowrap; flex: 0 0 auto; }
 #artZaehler { min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .filter-knopf.an { color: var(--neu-text); background: var(--neu); border-color: var(--neu-rand); }
+#handschlagBtn { margin-left: 0; }
+#handschlagBtn.an { color: var(--akzent); background: var(--akzent-weich); border-color: var(--akzent); }
+#handschlagBtn.versteckt { display: none; }
 .klapp:hover { color: var(--text); }
 
 #ablauf { max-height: 200px; overflow-y: auto; padding: 4px 0; }
@@ -326,7 +331,7 @@ body.leiste-breit .art-inhalt { max-height: 400px; }
 .art-inhalt.voll { max-height: min(72vh, 760px); }
 body.leiste-breit .art-inhalt.voll { max-height: min(76vh, 900px); }
 .z { white-space: pre; padding: 0 10px; border-left: 3px solid transparent; }
-.z-neu { background: var(--neu); border-left-color: var(--neu-rand); }
+.z-neu { background: var(--neu-zeile-bg); border-left-color: var(--neu-rand); }
 .z-alt { opacity: .42; }
 .z-kopf { color: var(--text-3); position: sticky; top: -4px; background: var(--kopf-bg); border-bottom: 1px solid var(--rand-2); }
 .z-gutter { display: inline-block; color: var(--text-3); margin-right: 10px; }
@@ -388,6 +393,32 @@ dialog#hilfe::backdrop { background: rgba(28,35,48,.35); }
 dialog#hilfe h3 { color: var(--text); font-size: 13px; margin: 14px 0 3px; }
 dialog#hilfe p { margin: 0; }
 dialog#hilfe code, kbd { font-family: var(--font-mono); font-size: 11.5px; background: var(--flaeche-2); border: 1px solid var(--rand); border-radius: 3px; padding: 0 4px; }
+
+/* ---------- Artefakt ganzflaechig ---------- */
+.vollbild {
+  position: fixed; inset: 0; z-index: 60; display: flex; align-items: center; justify-content: center;
+  background: rgba(10,13,18,.6); padding: 36px;
+}
+.vollbild.versteckt { display: none; }
+.vollbild-karte {
+  width: 100%; height: 100%; max-width: 1400px; display: flex; flex-direction: column; overflow: hidden;
+  background: var(--flaeche); border: 1px solid var(--rand); border-radius: 10px; box-shadow: 0 24px 64px rgba(0,0,0,.4);
+}
+.vollbild-kopf {
+  flex: 0 0 auto; display: flex; align-items: center; justify-content: space-between; gap: 12px;
+  padding: 12px 16px; border-bottom: 1px solid var(--rand); background: var(--flaeche-2);
+  font-size: 14px; font-weight: 600; color: var(--text);
+}
+.vollbild-kopf button {
+  appearance: none; border: none; background: transparent; color: var(--text-3); font-size: 24px; line-height: 1; cursor: pointer;
+}
+.vollbild-kopf button:hover { color: var(--text); }
+.vollbild-inhalt {
+  flex: 1 1 auto; overflow: auto; padding: 8px 0; font-family: var(--font-mono); font-size: 13px; line-height: 1.7; color: var(--text);
+  background: var(--inhalt-bg);
+}
+.vollbild-inhalt .z { padding: 0 20px; }
+.vollbild-inhalt .z-kopf { top: -8px; }
 
 ::-webkit-scrollbar { width: 9px; height: 9px; }
 ::-webkit-scrollbar-thumb { background: var(--scroll-daumen); border-radius: 5px; border: 2px solid transparent; background-clip: padding-box; }
