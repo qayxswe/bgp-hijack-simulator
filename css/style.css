@@ -66,6 +66,14 @@
   --sx-zeit: #7FB4E8; --sx-ip: #D4AE5C; --sx-praefix: #E68F63; --sx-as: #4CC79E; --sx-schluessel: #B29CE0;
   color-scheme: dark; }
 
+/* Rollenfarben (rs/bob/isp/eve) einmal je Klasse gesetzt: --rc (Rollenfarbe) und --rf
+   (zugehoerige Flaeche) werden von Knoten, Zugangsleitungen, Auswahl-Chips und
+   Artefakt-Karten gemeinsam genutzt, statt in jedem Bauteil einzeln wiederholt zu werden. */
+.rolle-rs  { --rc: var(--m-rs);  --rf: var(--f-rs); }
+.rolle-bob { --rc: var(--m-bob); --rf: var(--f-bob); }
+.rolle-isp { --rc: var(--m-isp); --rf: var(--f-isp); }
+.rolle-eve { --rc: var(--m-eve); --rf: var(--f-eve); }
+
 * { box-sizing: border-box; }
 html, body { margin: 0; padding: 0; }
 html { background: var(--bg); }
@@ -170,20 +178,13 @@ svg#netz { width: 100%; height: 100%; display: block; }
 .bus { stroke: var(--seg); stroke-width: 6; stroke-linecap: round; }
 .anschluss { stroke: var(--seg); stroke-width: 2; }
 .anschluss-punkt { fill: var(--flaeche); stroke: var(--seg); stroke-width: 2; }
-.zugang { stroke-width: 2; }
-.zugang.rolle-isp { stroke: var(--m-isp); }
-.zugang.rolle-bob { stroke: var(--m-bob); }
-.zugang.rolle-eve { stroke: var(--m-eve); }
+.zugang { stroke: var(--rc); stroke-width: 2; }
 .segment-text { font-family: var(--font-mono); font-size: 10px; fill: var(--text-3); }
 .flugbahn { fill: none; stroke-width: 2.2; stroke-opacity: .5; stroke-linejoin: round; }
 
 .knoten { cursor: pointer; transition: opacity .2s ease; }
-.knoten.rolle-rs  { --f: var(--f-rs);  --s: var(--m-rs); }
-.knoten.rolle-bob { --f: var(--f-bob); --s: var(--m-bob); }
-.knoten.rolle-isp { --f: var(--f-isp); --s: var(--m-isp); }
-.knoten.rolle-eve { --f: var(--f-eve); --s: var(--m-eve); }
-.knoten-kasten { fill: var(--f); stroke: var(--s); stroke-width: 1.2; }
-.knoten-akzent { fill: var(--s); }
+.knoten-kasten { fill: var(--rf); stroke: var(--rc); stroke-width: 1.2; }
+.knoten-akzent { fill: var(--rc); }
 .knoten:hover .knoten-kasten { stroke-width: 2; }
 .knoten.selected .knoten-kasten { stroke-width: 2.6; }
 .knoten.dim { opacity: .38; }
@@ -280,16 +281,8 @@ body.leiste-breit #leiste { flex-basis: 860px; width: 860px; }
 }
 .chip > span:last-child { flex: 1 1 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .chip:hover { color: var(--text-2); border-color: var(--text-3); }
-.chip-sys { font-family: var(--font-mono); font-weight: 600; font-size: 10.5px; flex: 0 0 auto; }
-.chip.an { color: var(--text); }
-.chip.rolle-rs .chip-sys  { color: var(--m-rs); }
-.chip.rolle-bob .chip-sys { color: var(--m-bob); }
-.chip.rolle-isp .chip-sys { color: var(--m-isp); }
-.chip.rolle-eve .chip-sys { color: var(--m-eve); }
-.chip.an.rolle-rs  { background: var(--f-rs);  border-color: var(--m-rs); }
-.chip.an.rolle-bob { background: var(--f-bob); border-color: var(--m-bob); }
-.chip.an.rolle-isp { background: var(--f-isp); border-color: var(--m-isp); }
-.chip.an.rolle-eve { background: var(--f-eve); border-color: var(--m-eve); }
+.chip-sys { font-family: var(--font-mono); font-weight: 600; font-size: 10.5px; flex: 0 0 auto; color: var(--rc); }
+.chip.an { color: var(--text); background: var(--rf); border-color: var(--rc); }
 .chip.neu::after { content: ''; flex: 0 0 auto; width: 7px; height: 7px; border-radius: 50%; background: var(--neu-rand); }
 .chip.beste { box-shadow: 0 0 0 1px var(--akzent); }
 .chip.beste:not(.an) { border-color: var(--akzent); color: var(--akzent); }
@@ -297,22 +290,14 @@ body.leiste-breit #leiste { flex-basis: 860px; width: 860px; }
 #artListe { flex: 1 1 auto; overflow-y: auto; padding: 12px 14px 18px; display: flex; flex-direction: column; gap: 12px; background: var(--flaeche-2); }
 .leer-hinweis { font-size: 12px; color: var(--text-3); padding: 10px 2px; }
 .art-karte {
-  border: 1px solid var(--rand); border-left: 3px solid var(--rand); border-radius: 6px;
+  border: 1px solid var(--rand); border-left: 3px solid var(--rc); border-radius: 6px;
   background: var(--flaeche); overflow: hidden; flex: 0 0 auto;
 }
-.art-karte.rolle-rs  { border-left-color: var(--m-rs); }
-.art-karte.rolle-bob { border-left-color: var(--m-bob); }
-.art-karte.rolle-isp { border-left-color: var(--m-isp); }
-.art-karte.rolle-eve { border-left-color: var(--m-eve); }
 .art-karte.hat-neues { border-color: var(--neu-rand); border-left-color: var(--neu-rand); }
 .art-karte.beste { border-top-color: var(--akzent); border-right-color: var(--akzent); border-bottom-color: var(--akzent); box-shadow: 0 0 0 1px var(--akzent); }
 .art-best { font-size: 10.5px; font-weight: 600; color: var(--akzent); background: var(--akzent-weich); border: 1px solid var(--akzent); border-radius: 3px; padding: 0 6px; white-space: nowrap; }
 .art-kopf { display: flex; align-items: center; gap: 8px; padding: 8px 10px 3px; }
-.art-sys { font-family: var(--font-mono); font-weight: 600; font-size: 11.5px; }
-.art-karte.rolle-rs .art-sys  { color: var(--m-rs); }
-.art-karte.rolle-bob .art-sys { color: var(--m-bob); }
-.art-karte.rolle-isp .art-sys { color: var(--m-isp); }
-.art-karte.rolle-eve .art-sys { color: var(--m-eve); }
+.art-sys { font-family: var(--font-mono); font-weight: 600; font-size: 11.5px; color: var(--rc); }
 .art-titel { font-size: 12px; font-weight: 600; }
 .art-neu { font-size: 10.5px; font-weight: 600; color: var(--neu-text); background: var(--neu); border: 1px solid var(--neu-rand); border-radius: 3px; padding: 0 6px; }
 .art-gross { margin-left: auto; appearance: none; border: none; background: transparent; color: var(--text-3); cursor: pointer; width: 20px; height: 20px; display: flex; align-items: center; justify-content: center; padding: 0; flex: 0 0 auto; }
