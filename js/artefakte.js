@@ -28,10 +28,12 @@ window.App = window.App || {};
   const SYSTEM_ROLLE = { rs: 'rs', asa: 'isp', clienta: 'isp', asb: 'bob', weblegit: 'bob', hijacker: 'eve', webevil: 'eve' };
 
   let wahlEl, listeEl, zaehlerEl, nurNeueEl;
+  let vollbildEl, vollbildTitelEl, vollbildInhaltEl;
   let auswahl = new Set(VORGABE);
   let besteId = null, besteGrund = '';
   let neuIds = new Set();           // Artefakte mit neuen Zeilen im aktuellen Schritt
   let nurNeue = false;              // Anzeige auf Artefakte mit neuen Zeilen beschraenkt, statt Auswahl
+  let vollbildId = null;            // Artefakt, das gerade ganzflaechig gezeigt wird
   const gewaehlteAnsicht = {};      // artefaktId -> Ansicht (bleibt ueber die Schritte erhalten)
   const gewaehlterAbschnitt = {};   // artefaktId -> Phase (manuelle Auswahl bis zum naechsten Schritt)
   const ausgeklappt = new Set();    // artefaktId -> Inhalt gross statt in fester Fensterhoehe
@@ -54,12 +56,33 @@ window.App = window.App || {};
 
   function init(elWahl, elListe, elZaehler, elNurNeue) {
     wahlEl = elWahl; listeEl = elListe; zaehlerEl = elZaehler; nurNeueEl = elNurNeue;
+    vollbildEl = document.getElementById('vollbild');
+    vollbildTitelEl = document.getElementById('vollbildTitel');
+    vollbildInhaltEl = document.getElementById('vollbildInhalt');
     laden();
     if (nurNeueEl) nurNeueEl.addEventListener('click', () => { nurNeue = !nurNeue; nachAuswahl(); listeEl.scrollTop = 0; });
+    document.getElementById('vollbildZu').addEventListener('click', vollbildSchliessen);
+    vollbildEl.addEventListener('click', (e) => { if (e.target === vollbildEl) vollbildSchliessen(); });
+    document.addEventListener('keydown', (e) => { if (e.key === 'Escape' && vollbildId) vollbildSchliessen(); });
     // Vorbelegung ueber die Adresse, etwa index.html?a=rs-rib-mrt,asb-bgp#s2-6
     const a = new URLSearchParams(location.search).get('a');
     if (a) auswahl = new Set(a.split(',').filter((id) => M.ARTEFAKT[id]));
     wahlAufbauen();
+  }
+
+  /* ---------------- Ganzflaechige Ansicht ----------------
+     Oeffnet sich beim Klick in den Inhalt eines Artefakts; bleibt beim Schrittwechsel offen
+     und aktualisiert sich mit (siehe Ende von zeichnen()), solange das Artefakt weiter
+     ausgewaehlt ist -- sonst schliesst sie sich von selbst. */
+  function vollbildOeffnen(id, titel, html) {
+    vollbildId = id;
+    vollbildTitelEl.textContent = titel;
+    vollbildInhaltEl.innerHTML = html;
+    vollbildEl.classList.remove('versteckt');
+  }
+  function vollbildSchliessen() {
+    vollbildId = null;
+    vollbildEl.classList.add('versteckt');
   }
 
   /* ---------------- Auswahl ---------------- */
@@ -89,10 +112,10 @@ window.App = window.App || {};
       wahlEl.appendChild(box);
     });
     wahlEl.querySelectorAll('.wahl-alle').forEach((b) => b.addEventListener('click', () => {
-      M.ARTEFAKTE.filter((a) => a.gruppe === b.dataset.g).forEach((a) => auswahl.add(a.id)); nachAuswahl();
+      M.ARTEFAKTE.filter((a) => a.gruppe === b.dataset.g).forEach((a) => auswahl.add(a.id)); nurNeue = false; nachAuswahl();
     }));
     wahlEl.querySelectorAll('.wahl-keine').forEach((b) => b.addEventListener('click', () => {
-      M.ARTEFAKTE.filter((a) => a.gruppe === b.dataset.g).forEach((a) => auswahl.delete(a.id)); nachAuswahl();
+      M.ARTEFAKTE.filter((a) => a.gruppe === b.dataset.g).forEach((a) => auswahl.delete(a.id)); nurNeue = false; nachAuswahl();
     }));
     chipsAktualisieren();
   }
@@ -131,6 +154,7 @@ window.App = window.App || {};
   }
   function umschalten(id) {
     if (auswahl.has(id)) auswahl.delete(id); else auswahl.add(id);
+    nurNeue = false;   // manuelle Auswahl geht vor "Nur Neues"
     nachAuswahl();
   }
   function nachAuswahl() {
@@ -211,6 +235,11 @@ window.App = window.App || {};
       if (wahl) wahl.addEventListener('change', (e) => { gewaehlteAnsicht[a.id] = e.target.value; zeichnen(aktSz, aktSchritt, true); });
       listeEl.appendChild(karte);
       const inh = karte.querySelector('.art-inhalt');
+      inh.title = 'Klicken: ganzflächig öffnen';
+      inh.addEventListener('click', () => {
+        if (window.getSelection && String(window.getSelection())) return;   // Textauswahl nicht als Klick werten
+        vollbildOeffnen(a.id, a.system + ' · ' + a.titel, erg.html);
+      });
       if (!neuerSchritt && alteScroll[a.id] != null) inh.scrollTop = alteScroll[a.id];
       else {
         // Protokolle: zur ersten neuen Zeile, sonst ans Ende (juengste Zeilen).
@@ -220,7 +249,10 @@ window.App = window.App || {};
         else if (erstes) inh.scrollTop = Math.max(0, erstes.offsetTop - inh.offsetTop - 24);
         else inh.scrollTop = inh.scrollHeight;
       }
+      // Ganzflaechige Ansicht bleibt beim Schrittwechsel offen und zieht mit.
+      if (vollbildId === a.id) vollbildOeffnen(a.id, a.system + ' · ' + a.titel, erg.html);
     });
+    if (vollbildId && !gewaehlt.some((a) => a.id === vollbildId)) vollbildSchliessen();
     zaehlerEl.textContent = (nurNeue ? gewaehlt.length + ' mit Neuem' : gewaehlt.length + ' gewählt')
       + (neuGesamt ? ' · ' + neuGesamt + ' neue Einträge' : '');
   }
