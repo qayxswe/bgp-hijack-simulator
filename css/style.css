@@ -156,6 +156,7 @@ main { flex: 1 1 auto; min-height: 0; display: flex; }
 .ev-weg { color: var(--text); width: 96px; font-weight: 600; }
 .ev-sys { color: var(--text); width: 58px; font-weight: 600; }
 .ev-sys + .ev-art { width: 96px; text-align: center; }
+.ev-art.ev-befehl-art { width: 168px; text-align: left; font-family: var(--font-mono); }
 .ev-weg + .ev-art { width: 84px; text-align: center; }
 .ev-art { font-family: var(--font-ui); font-size: 10.5px; font-weight: 600; padding: 0 6px; border-radius: 3px; border: 1px solid var(--rand); background: var(--flaeche-2); color: var(--text-2); }
 .ev-W { background: var(--flaeche); border-style: dashed; }
@@ -289,8 +290,15 @@ body.leiste-breit #leiste { flex-basis: 860px; width: 860px; }
 .chip-sys { font-family: var(--font-mono); font-weight: 600; font-size: 10.5px; flex: 0 0 auto; color: var(--rc); }
 .chip.an { color: var(--text); background: var(--rf); border-color: var(--rc); }
 .chip.neu::after { content: ''; flex: 0 0 auto; width: 7px; height: 7px; border-radius: 50%; background: var(--neu-rand); }
-.chip.beste { box-shadow: 0 0 0 1px var(--akzent); }
-.chip.beste:not(.an) { border-color: var(--akzent); color: var(--akzent); }
+/* Eigene Kennzeichnung statt Ring in Akzentfarbe: die war von der normalen Auswahl (.an,
+   teils selbst akzentfarben bei rolle-rs) kaum zu unterscheiden. Jetzt ein Plaketten-Punkt
+   mit Ausrufezeichen, unabhaengig von Rollen- oder Auswahlfarbe erkennbar. */
+.chip.beste { position: relative; }
+.chip.beste::after {
+  content: '!'; position: absolute; top: -6px; right: -6px; width: 14px; height: 14px; border-radius: 50%;
+  background: var(--neu-rand); color: #1c2330; font-size: 10px; font-weight: 800; line-height: 14px;
+  text-align: center; box-shadow: 0 0 0 2px var(--flaeche);
+}
 
 #artListe { flex: 1 1 auto; overflow-y: auto; padding: 12px 14px 18px; display: flex; flex-direction: column; gap: 12px; background: var(--flaeche-2); }
 .leer-hinweis { font-size: 12px; color: var(--text-3); padding: 10px 2px; }
@@ -331,8 +339,8 @@ body.leiste-breit .art-inhalt { max-height: 400px; }
 .art-inhalt.voll { max-height: min(72vh, 760px); }
 body.leiste-breit .art-inhalt.voll { max-height: min(76vh, 900px); }
 .z { white-space: pre; padding: 0 10px; border-left: 3px solid transparent; }
-.z-neu { background: var(--neu-zeile-bg); border-left-color: var(--neu-rand); }
-.z-alt { opacity: .42; }
+.z-neu { background: var(--neu-zeile-bg); border-color: var(--neu-rand); border-width: 1px 1px 1px 3px; border-style: solid; }
+.z-alt { opacity: .66; }
 .z-kopf { color: var(--text-3); position: sticky; top: -4px; background: var(--kopf-bg); border-bottom: 1px solid var(--rand-2); }
 .z-gutter { display: inline-block; color: var(--text-3); margin-right: 10px; }
 .z-leer { font-family: var(--font-ui); font-size: 11.5px; color: var(--text-3); padding: 4px 10px; white-space: normal; line-height: 1.45; }
@@ -401,9 +409,17 @@ dialog#hilfe code, kbd { font-family: var(--font-mono); font-size: 11.5px; backg
 }
 .vollbild.versteckt { display: none; }
 .vollbild-karte {
-  width: 100%; height: 100%; max-width: 1400px; display: flex; flex-direction: column; overflow: hidden;
+  position: relative; width: 100%; height: 100%; max-width: 1400px; min-width: 480px; min-height: 320px;
+  display: flex; flex-direction: column; overflow: hidden;
   background: var(--flaeche); border: 1px solid var(--rand); border-radius: 10px; box-shadow: 0 24px 64px rgba(0,0,0,.4);
 }
+.vollbild-groesse {
+  position: absolute; right: 2px; bottom: 2px; width: 20px; height: 20px; cursor: nwse-resize;
+  color: var(--text-3); display: flex; align-items: center; justify-content: center; touch-action: none;
+}
+.vollbild-groesse:hover { color: var(--text-2); }
+.vollbild-groesse svg { width: 13px; height: 13px; }
+.vollbild-groesse svg path { fill: none; stroke: currentColor; stroke-width: 1.4; stroke-linecap: round; }
 .vollbild-kopf {
   flex: 0 0 auto; display: flex; align-items: center; justify-content: space-between; gap: 12px;
   padding: 12px 16px; border-bottom: 1px solid var(--rand); background: var(--flaeche-2);
