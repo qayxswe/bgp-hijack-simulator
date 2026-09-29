@@ -70,6 +70,7 @@ window.App = window.App || {};
   let svg, flugEbene, knotenEbene, infoEl, knotenKlick, auswahlHandler;
   const zeilen = {};   // Knoten -> [Zustandszeile 1, Zustandszeile 2]
   let rsZeilen = [];   // rs: eine Zeile je Praefix (Ausgangszustand + Angriffspraefix)
+  let handschlagAn = false;   // T0 wahlweise: TCP- und BGP-Handshake der drei Sitzungen zeigen
 
   function el(tag, attrs, eltern) {
     const e = document.createElementNS(svgns, tag);
@@ -148,6 +149,33 @@ window.App = window.App || {};
       g.addEventListener('click', (ev) => { ev.stopPropagation(); knotenKlick && knotenKlick(n.system); });
     });
     infoEl.querySelector('.ei-close').addEventListener('click', infoAus);
+    machZiehbar(infoEl, infoEl.querySelector('.ei-head'));
+  }
+
+  // Fenster per Kopfzeile ziehbar machen (nicht ueber dem Schliessen-Knopf), begrenzt auf
+  // den umgebenden .netz-wrap. Nach dem ersten Ziehen ist die Position per links/oben fest,
+  // vorher haengt sie an rechts/oben (siehe CSS .edge-info).
+  function machZiehbar(el, griff) {
+    let dx = 0, dy = 0, ziehen = false;
+    griff.style.cursor = 'move';
+    griff.addEventListener('pointerdown', (ev) => {
+      if (ev.target.closest('.ei-close')) return;
+      ziehen = true;
+      const r = el.getBoundingClientRect();
+      dx = ev.clientX - r.left; dy = ev.clientY - r.top;
+      el.style.right = 'auto';
+      el.style.left = r.left - el.offsetParent.getBoundingClientRect().left + 'px';
+      el.style.top = r.top - el.offsetParent.getBoundingClientRect().top + 'px';
+      griff.setPointerCapture(ev.pointerId);
+    });
+    griff.addEventListener('pointermove', (ev) => {
+      if (!ziehen) return;
+      const eltern = el.offsetParent.getBoundingClientRect();
+      const x = Math.max(0, Math.min(ev.clientX - eltern.left - dx, eltern.width - el.offsetWidth));
+      const y = Math.max(0, Math.min(ev.clientY - eltern.top - dy, eltern.height - el.offsetHeight));
+      el.style.left = x + 'px'; el.style.top = y + 'px';
+    });
+    griff.addEventListener('pointerup', (ev) => { ziehen = false; griff.releasePointerCapture(ev.pointerId); });
   }
 
   /* ---------------- Wege ---------------- */
@@ -198,6 +226,26 @@ window.App = window.App || {};
 
   function ursprung(pfad) { const t = (pfad || '').trim().split(/\s+/); return t[t.length - 1] || ''; }
 
+  // TCP- und BGP-Handshake der drei Sitzungen (Neustart des Dienstes auf rs kurz vor T0),
+  // als Fluege auf den bestehenden Sitzungsspuren. Die Reihenfolge folgt der echten
+  // Paketzeit (M.sitzungsaufbau), ueber die Schrittdauer verteilt.
+  function handschlagFluege() {
+    const pakete = M.sitzungsaufbau;
+    if (!pakete.length) return [];
+    const anfang = pakete[0].t, dauer = Math.max(pakete[pakete.length - 1].t - anfang, 0.001);
+    return pakete.map((e) => {
+      const von = M.IP_SYSTEM[e.von], an = M.IP_SYSTEM[e.an];
+      const zumRs = an === 'rs', vm = zumRs ? von : an;
+      const istBgp = e.protokoll === 'BGP';
+      return {
+        weg: spur(vm, zumRs), art: istBgp ? 'daten' : 'tcp', farbe: SYSTEM_FARBE[von] || 'var(--m-rs)',
+        span: [Math.min(0.9, (e.t - anfang) / dauer * 0.9), 1],
+        knoten: ['k:' + von, 'k:' + an],
+        label: `${e.zeit}  ${von} → ${an}  ${istBgp ? e.info : 'TCP ' + e.info}`,
+      };
+    });
+  }
+
   function fluegeFuer(sz, schritt) {
     const fl = [];
     if (schritt.art === 'ereignis') {
@@ -229,12 +277,14 @@ window.App = window.App || {};
           label: 'clienta → 198.51.100.10 · ' + m.http + ' · Hop 2 ' + m.hop2,
         });
       }
+      if (schritt.phase === 'T0' && handschlagAn) fl.push(...handschlagFluege());
     }
     return fl;
   }
 
   function marke(art, x, y, farbe) {
     if (art === 'daten') return el('circle', { cx: x, cy: y, r: 5.5, fill: farbe, class: 'marke' }, flugEbene);
+    if (art === 'tcp') return el('circle', { cx: x, cy: y, r: 4.5, fill: 'var(--flaeche)', stroke: farbe, 'stroke-width': 2, class: 'marke' }, flugEbene);
     const pts = `${x},${y - 7} ${x + 7},${y} ${x},${y + 7} ${x - 7},${y}`;
     if (art === 'ruecknahme') return el('polygon', { points: pts, fill: 'var(--flaeche)', stroke: farbe, 'stroke-width': 2, class: 'marke' }, flugEbene);
     return el('polygon', { points: pts, fill: farbe, class: 'marke' }, flugEbene);
@@ -369,6 +419,8 @@ window.App = window.App || {};
   function markiereKnoten(system) {
     knotenEbene.querySelectorAll('.knoten').forEach((g) => g.classList.toggle('selected', !!system && g.getAttribute('data-system') === system));
   }
+  function setzeHandschlag(an) { handschlagAn = an; }
+  function istHandschlagAn() { return handschlagAn; }
 
-  App.netz = { aufbauen, zeichnen, knotenInfo, infoAus, markiereKnoten };
+  App.netz = { aufbauen, zeichnen, knotenInfo, infoAus, markiereKnoten, setzeHandschlag, istHandschlagAn };
 })(window.App);
