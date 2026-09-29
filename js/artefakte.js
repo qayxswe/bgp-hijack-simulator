@@ -141,22 +141,56 @@ window.App = window.App || {};
       const wrap = document.querySelector('.netz-wrap');
       if (!netzHeimat) netzHeimat = { eltern: wrap.parentNode, danach: wrap.nextSibling };
       document.getElementById('vollbildNetz').appendChild(wrap);
+      netzZuschneiden(true);
       vollbildAusrichten();
     } else {
       netzZurueck();
     }
   }
+  // In der Split-Ansicht die viewBox auf den gezeichneten Inhalt zuschneiden, damit der
+  // Netzplan ohne Leerrand so gross wie moeglich wird; in der Buehne wieder die feste viewBox.
+  let netzViewBox = null;
+  function netzZuschneiden(an) {
+    const svg = document.getElementById('netz');
+    if (an) {
+      if (!netzViewBox) netzViewBox = svg.getAttribute('viewBox');
+      svg.setAttribute('viewBox', netzViewBox);
+      let b = null;
+      try { b = svg.getBBox(); } catch (e) { /* nicht sichtbar */ }
+      if (b && b.width && b.height) {
+        const r = 4;
+        svg.setAttribute('viewBox', [b.x - r, b.y - r, b.width + 2 * r, b.height + 2 * r].map((v) => Math.round(v)).join(' '));
+      }
+    } else if (netzViewBox) {
+      svg.setAttribute('viewBox', netzViewBox);
+      netzViewBox = null;
+    }
+  }
   function netzZurueck() {
+    netzZuschneiden(false);
     if (!netzHeimat) return;
     netzHeimat.eltern.insertBefore(document.querySelector('.netz-wrap'), netzHeimat.danach);
     netzHeimat = null;
   }
-  // Breites Fenster: Netzplan links daneben; hohes Fenster: Netzplan darueber.
+  // Netzplan daneben oder darueber -- je nachdem, wo er groesser wird. Solange der Trenner
+  // nicht von Hand gezogen wurde, bekommt der Netzplan so viel Platz, wie er fuer die volle
+  // Hoehe (bzw. Breite) braucht, zwischen 35 und 65 Prozent; der Rest bleibt dem Log.
+  let vbAnteilVonHand = false;
   function vollbildAusrichten() {
-    const karte = document.getElementById('vollbildKarte');
-    const r = karte.getBoundingClientRect();
-    if (!r.width) return;
-    document.getElementById('vollbildKoerper').classList.toggle('stapel', r.width / r.height < 1.25);
+    const koerper = document.getElementById('vollbildKoerper');
+    const r = koerper.getBoundingClientRect();
+    if (!r.width || !r.height) return;
+    const vb = (document.getElementById('netz').getAttribute('viewBox') || '0 0 1000 620').split(/\s+/).map(Number);
+    const begrenzt = (x) => Math.min(0.65, Math.max(0.35, x));
+    const anteilDaneben = vbAnteilVonHand ? null : begrenzt(r.height * vb[2] / vb[3] / r.width);
+    const anteilDarueber = vbAnteilVonHand ? null : begrenzt(r.width * vb[3] / vb[2] / r.height);
+    const hand = (parseFloat(getComputedStyle(koerper).getPropertyValue('--vb-netz')) || 50) / 100;
+    const aD = anteilDaneben || hand, aU = anteilDarueber || hand;
+    const daneben = Math.min(r.width * aD / vb[2], r.height / vb[3]);
+    const darueber = Math.min(r.width / vb[2], r.height * aU / vb[3]);
+    const stapel = darueber > daneben;
+    koerper.classList.toggle('stapel', stapel);
+    if (!vbAnteilVonHand) koerper.style.setProperty('--vb-netz', Math.round((stapel ? aU : aD) * 1000) / 10 + '%');
   }
   function vollbildTrennerInit() {
     const t = document.getElementById('vollbildTrenner');
@@ -168,6 +202,7 @@ window.App = window.App || {};
       const r = koerper.getBoundingClientRect();
       const stapel = koerper.classList.contains('stapel');
       const bewegen = (ev) => {
+        vbAnteilVonHand = true;
         const anteil = stapel ? (ev.clientY - r.top) / r.height : (ev.clientX - r.left) / r.width;
         koerper.style.setProperty('--vb-netz', Math.round(Math.min(0.8, Math.max(0.2, anteil)) * 1000) / 10 + '%');
       };
