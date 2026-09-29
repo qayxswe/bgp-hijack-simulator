@@ -52,27 +52,36 @@ window.App = window.App || {};
     return z;
   }
 
-  /* ---------------- Mitschnitt rs_enp0s8.pcap (dekodierte UPDATEs) ---------------- */
-  function leseMitschnitt() {
+  /* ---------------- Protokolle mit Kommentaren/Kopfzeile und einer Zeile je Eintrag ----------------
+     Gemeinsames Muster von leseMitschnitt, leseBmp und leseListe: Zeilen mit "#" oder leer
+     werden uebersprungen, die Kopfzeile (erkannt am festen Anfang kopfPrefix) gesondert
+     gesammelt, jede uebrige Zeile ergibt per bauEintrag(z, i) einen Eintrag. i ist der Index
+     in der Rohdatei (zaehlt auch uebersprungene Zeilen mit), damit nr als stabiler
+     Sortierschluessel bei Zeitgleichheit dient. */
+  function leseDatei(pfad, kopfPrefix, bauEintrag) {
     const kopf = [], eintraege = [];
-    zeilen('FRRouting/_RouteServer/bgp-updates-rs.txt').forEach((z, i) => {
+    zeilen(pfad).forEach((z, i) => {
       if (z.startsWith('#') || z.trim() === '') return;
-      if (z.startsWith('Zeit(UTC)')) { kopf.push(z); return; }
-      const f = z.trim().split(/\s+/);
-      const e = { t: hms(f[0]), zeit: f[0], text: z, nr: i + 1, von: f[1], an: f[2], ev: f[3], praefix: '', pfad: '', nh: '' };
-      if (e.ev === 'A') { e.praefix = f[4]; e.nh = f[f.length - 1]; e.pfad = f.slice(5, -1).join(' '); }
-      else if (e.ev === 'W') { e.praefix = f[4]; }
-      eintraege.push(e);
+      if (z.startsWith(kopfPrefix)) { kopf.push(z); return; }
+      eintraege.push(bauEintrag(z, i));
     });
     return { kopf, eintraege };
   }
 
+  /* ---------------- Mitschnitt rs_enp0s8.pcap (dekodierte UPDATEs) ---------------- */
+  function leseMitschnitt() {
+    return leseDatei('FRRouting/_RouteServer/bgp-updates-rs.txt', 'Zeit(UTC)', (z, i) => {
+      const f = z.trim().split(/\s+/);
+      const e = { t: hms(f[0]), zeit: f[0], text: z, nr: i + 1, von: f[1], an: f[2], ev: f[3], praefix: '', pfad: '', nh: '' };
+      if (e.ev === 'A') { e.praefix = f[4]; e.nh = f[f.length - 1]; e.pfad = f.slice(5, -1).join(' '); }
+      else if (e.ev === 'W') { e.praefix = f[4]; }
+      return e;
+    });
+  }
+
   /* ---------------- BMP-Ausleitung (dekodiert) ---------------- */
   function leseBmp() {
-    const kopf = [], eintraege = [];
-    zeilen('FRRouting/_RouteServer/bmp-nachrichten.txt').forEach((z, i) => {
-      if (z.startsWith('#') || z.trim() === '') return;
-      if (z.startsWith('Art ')) { kopf.push(z); return; }
+    return leseDatei('FRRouting/_RouteServer/bmp-nachrichten.txt', 'Art ', (z, i) => {
       const f = z.trim().split(/\s+/);
       const e = { t: hms(f[1]), zeit: f[1], text: z, nr: i + 1, art: f[0] };
       // Route Monitoring: Sicht (Adj post/pre, Loc-RIB), Peer, Ereignis, Praefix, Pfad, Next-Hop
@@ -83,9 +92,8 @@ window.App = window.App || {};
           e.pfad = (m[5] || '').trim(); e.nh = m[6] || '';
         }
       }
-      eintraege.push(e);
+      return e;
     });
-    return { kopf, eintraege };
   }
 
   /* ---------------- MRT-Dump updates.mrt (bgpdump -m) ---------------- */
@@ -159,33 +167,28 @@ window.App = window.App || {};
     return roh;
   }
 
-  /* ---------------- einfache Protokolle mit Zeitangabe je Zeile ---------------- */
-  function leseZugriff(vm) {
+  /* ---------------- einfache Protokolle mit Zeitangabe je Zeile ----------------
+     zugriffsprotokoll-*.log und sudo-audit-hijacker.log liegen je Szenario in einer
+     eigenen Datei, sind inhaltlich aber ein durchgehendes Protokoll des gesamten Laufs. */
+  function leseUeberSzenarien(dateiFuerOrdner, bauEintrag) {
     const alle = [];
-    ['1_SubPraefix_Vortaeuschen', '2_GleichesPraefix_FalscherUrsprung'].forEach((o) => {
-      zeilen(o + '/zugriffsprotokoll-' + vm + '.log').forEach((z) => {
-        const m = /\[\d+\/\w+\/\d+:(\d{2}:\d{2}:\d{2}) /.exec(z);
-        alle.push({ t: m ? hms(m[1]) : NaN, text: z });
-      });
+    SZENARIO_REIHE.forEach((id) => {
+      zeilen(dateiFuerOrdner(SZENARIEN[id].ordner)).forEach((z) => alle.push(bauEintrag(z)));
     });
     return alle.map((e, i) => Object.assign(e, { nr: i + 1 }));
   }
-  function leseSudo() {
-    const alle = [];
-    ['1_SubPraefix_Vortaeuschen', '2_GleichesPraefix_FalscherUrsprung'].forEach((o) => {
-      zeilen(o + '/sudo-audit-hijacker.log').forEach((z) => alle.push({ t: hms(z.slice(11, 19)), text: z }));
+  function leseZugriff(vm) {
+    return leseUeberSzenarien((ordner) => ordner + '/zugriffsprotokoll-' + vm + '.log', (z) => {
+      const m = /\[\d+\/\w+\/\d+:(\d{2}:\d{2}:\d{2}) /.exec(z);
+      return { t: m ? hms(m[1]) : NaN, text: z };
     });
-    return alle.map((e, i) => Object.assign(e, { nr: i + 1 }));
+  }
+  function leseSudo() {
+    return leseUeberSzenarien((ordner) => ordner + '/sudo-audit-hijacker.log', (z) => ({ t: hms(z.slice(11, 19)), text: z }));
   }
   // Zeilen mit der Zeit am Anfang (HTTP-Sicht, Paketlisten der Mitschnitte)
   function leseListe(pfad) {
-    const kopf = [], eintraege = [];
-    zeilen(pfad).forEach((z, i) => {
-      if (z.startsWith('#') || z.trim() === '') return;
-      if (z.startsWith('Zeit(UTC)')) { kopf.push(z); return; }
-      eintraege.push({ t: hms(z.slice(0, 15)), zeit: z.slice(0, 15), text: z, nr: i + 1 });
-    });
-    return { kopf, eintraege };
+    return leseDatei(pfad, 'Zeit(UTC)', (z, i) => ({ t: hms(z.slice(0, 15)), zeit: z.slice(0, 15), text: z, nr: i + 1 }));
   }
 
   /* ---------------- Abfragen zu T0, T2, T4 (Schnappschuesse) ---------------- */
@@ -288,8 +291,6 @@ window.App = window.App || {};
   });
   const konfig = (vm) => zeilen('Konfiguration/' + vm + '.txt')
     .filter((z) => z !== '' && !/^(Building configuration|Current configuration|end)/.test(z));
-  const zugriffLegit = leseZugriff('weblegit');
-  const zugriffEvil = leseZugriff('webevil');
   const sudo = leseSudo();
 
   const abschnitte = {};   // abschnitte[szenario][datei] = [...]
@@ -303,10 +304,21 @@ window.App = window.App || {};
   /* ---------------- Artefakte ----------------
      gruppe: 'rs' = Rekonstruktion (Artefakte des Route-Servers),
              'bestaetigung' = weitere Quellen (Tabelle 7 der Arbeit).
-     Protokolle haben eine oder mehrere Ansichten; die erste ist die Vorgabe. */
+     Protokolle haben eine oder mehrere Ansichten; die erste ist die Vorgabe.
+     Kleine Fabrikfunktionen fuer wiederkehrende Artefaktarten (Konfiguration,
+     access.log) halten die eigentliche Liste unten kurz und einheitlich. */
   function schnappschuss(datei) { return (szId) => abschnitte[szId][datei]; }
   function ansicht(id, name, liste, befehl, quelle) {
     return { id, name, eintraege: liste.eintraege || liste, kopf: liste.kopf || [], befehl, quelle };
+  }
+  function konfigArtefakt(vm, gruppe) {
+    return { id: vm + '-konfig', gruppe, system: vm, titel: 'Konfiguration', typ: 'statisch',
+      befehl: 'vtysh -c "show running-config"', aufloesung: 'zu Beginn des Laufs',
+      quelle: () => 'Konfiguration/' + vm + '.txt', zeilen: konfig(vm) };
+  }
+  function zugriffArtefakt(vm) {
+    return { id: vm + '-log', gruppe: 'bestaetigung', system: vm, titel: 'access.log', typ: 'log', aufloesung: 'Sekunde',
+      ansichten: [ansicht('log', 'access.log', leseZugriff(vm), '/var/log/nginx/access.log', '1_…/ und 2_…/zugriffsprotokoll-' + vm + '.log')] };
   }
   const R_ = 'FRRouting/_RouteServer/';
   const ARTEFAKTE = [
@@ -336,9 +348,7 @@ window.App = window.App || {};
         ansicht('bmp', 'BMP, dekodiert', bmp, 'tshark -r rs_lo.pcap -d tcp.port==11019,bmp -Y bmp', R_ + 'bmp-nachrichten.txt'),
         ansicht('alle', 'alle Pakete', pakete.rs_lo, 'tshark -n -r rs_lo.pcap', R_ + 'rs_lo.pcap'),
       ] },
-    { id: 'rs-konfig', gruppe: 'rs', system: 'rs', titel: 'Konfiguration', typ: 'statisch',
-      befehl: 'vtysh -c "show running-config"', aufloesung: 'zu Beginn des Laufs',
-      quelle: () => 'Konfiguration/rs.txt', zeilen: konfig('rs') },
+    konfigArtefakt('rs', 'rs'),
 
     { id: 'asb-bgp', gruppe: 'bestaetigung', system: 'asb', titel: 'BGP-Tabelle', typ: 'schnappschuss',
       befehl: 'vtysh -c "show bgp ipv4 unicast <Präfix>"', aufloesung: 'Abfragezeitpunkt',
@@ -349,11 +359,8 @@ window.App = window.App || {};
     { id: 'asb-fib', gruppe: 'bestaetigung', system: 'asb', titel: 'Routing-Tabelle', typ: 'schnappschuss',
       befehl: 'vtysh -c "show ip route 198.51.100.10"', aufloesung: 'Abfragezeitpunkt',
       quelle: (sz) => sz.ordner + '/routing-tabelle-asb.txt', abschnitte: schnappschuss('routing-tabelle-asb.txt') },
-    { id: 'asb-konfig', gruppe: 'bestaetigung', system: 'asb', titel: 'Konfiguration', typ: 'statisch',
-      befehl: 'vtysh -c "show running-config"', aufloesung: 'zu Beginn des Laufs',
-      quelle: () => 'Konfiguration/asb.txt', zeilen: konfig('asb') },
-    { id: 'weblegit-log', gruppe: 'bestaetigung', system: 'weblegit', titel: 'access.log', typ: 'log', aufloesung: 'Sekunde',
-      ansichten: [ansicht('log', 'access.log', zugriffLegit, '/var/log/nginx/access.log', '1_…/ und 2_…/zugriffsprotokoll-weblegit.log')] },
+    konfigArtefakt('asb', 'bestaetigung'),
+    zugriffArtefakt('weblegit'),
     { id: 'asa-bgp', gruppe: 'bestaetigung', system: 'asa', titel: 'BGP-Tabelle', typ: 'schnappschuss',
       befehl: 'vtysh -c "show bgp ipv4 unicast <Präfix>"', aufloesung: 'Abfragezeitpunkt',
       quelle: (sz) => sz.ordner + '/bgp-tabelle-asa.txt', abschnitte: schnappschuss('bgp-tabelle-asa.txt') },
@@ -370,9 +377,7 @@ window.App = window.App || {};
         ansicht('http', 'HTTP', http, 'tshark -r asa_enp0s10.pcap -Y http', R_ + 'asa_enp0s10.pcap'),
         ansicht('alle', 'alle Pakete', pakete.asa_enp0s10, 'tshark -n -r asa_enp0s10.pcap', R_ + 'asa_enp0s10.pcap'),
       ] },
-    { id: 'asa-konfig', gruppe: 'bestaetigung', system: 'asa', titel: 'Konfiguration', typ: 'statisch',
-      befehl: 'vtysh -c "show running-config"', aufloesung: 'zu Beginn des Laufs',
-      quelle: () => 'Konfiguration/asa.txt', zeilen: konfig('asa') },
+    konfigArtefakt('asa', 'bestaetigung'),
     { id: 'clienta-mess', gruppe: 'bestaetigung', system: 'clienta', titel: 'Messprotokoll (ping, curl, traceroute)', typ: 'schnappschuss',
       befehl: 'ping -c 3 · curl -m 5 · traceroute -n', aufloesung: 'Messzeitpunkt',
       quelle: (sz) => sz.ordner + '/messprotokoll-clienta.txt', abschnitte: schnappschuss('messprotokoll-clienta.txt') },
@@ -382,11 +387,8 @@ window.App = window.App || {};
       ansichten: [ansicht('alle', 'alle Pakete', pakete.hijacker_enp0s8, 'tshark -n -r hijacker_enp0s8.pcap', R_ + 'hijacker_enp0s8.pcap')] },
     { id: 'hijacker-pcap10', gruppe: 'bestaetigung', system: 'hijacker', titel: 'Paketmitschnitt enp0s10', typ: 'log', aufloesung: 'Mikrosekunde',
       ansichten: [ansicht('alle', 'alle Pakete', pakete.hijacker_enp0s10, 'tshark -n -r hijacker_enp0s10.pcap', R_ + 'hijacker_enp0s10.pcap')] },
-    { id: 'hijacker-konfig', gruppe: 'bestaetigung', system: 'hijacker', titel: 'Konfiguration', typ: 'statisch',
-      befehl: 'vtysh -c "show running-config"', aufloesung: 'zu Beginn des Laufs',
-      quelle: () => 'Konfiguration/hijacker.txt', zeilen: konfig('hijacker') },
-    { id: 'webevil-log', gruppe: 'bestaetigung', system: 'webevil', titel: 'access.log', typ: 'log', aufloesung: 'Sekunde',
-      ansichten: [ansicht('log', 'access.log', zugriffEvil, '/var/log/nginx/access.log', '1_…/ und 2_…/zugriffsprotokoll-webevil.log')] },
+    konfigArtefakt('hijacker', 'bestaetigung'),
+    zugriffArtefakt('webevil'),
   ];
   const ARTEFAKT = {};
   ARTEFAKTE.forEach((a) => { ARTEFAKT[a.id] = a; });
@@ -403,20 +405,17 @@ window.App = window.App || {};
     return gruppen;
   }
 
-  function phasenende(szId, phase) {
-    let bis = -Infinity;
+  // Fruehester/spaetester Zeitpunkt aller Schnappschuss-Abfragen einer Phase, je nach
+  // gewaehltem Feld (tVon/tBis) und Kombinierfunktion (Math.min/Math.max).
+  function phasenGrenze(szId, phase, feld, kombiniere, start) {
+    let ergebnis = start;
     SCHNAPPSCHUSS_DATEIEN.forEach((d) => {
-      abschnitte[szId][d].forEach((a) => { if (a.phase === phase) bis = Math.max(bis, a.tBis); });
+      abschnitte[szId][d].forEach((a) => { if (a.phase === phase) ergebnis = kombiniere(ergebnis, a[feld]); });
     });
-    return bis;
+    return ergebnis;
   }
-  function phasenbeginn(szId, phase) {
-    let von = Infinity;
-    SCHNAPPSCHUSS_DATEIEN.forEach((d) => {
-      abschnitte[szId][d].forEach((a) => { if (a.phase === phase) von = Math.min(von, a.tVon); });
-    });
-    return von;
-  }
+  function phasenende(szId, phase) { return phasenGrenze(szId, phase, 'tBis', Math.max, -Infinity); }
+  function phasenbeginn(szId, phase) { return phasenGrenze(szId, phase, 'tVon', Math.min, Infinity); }
 
   function baueSchritte(szId) {
     const sz = SZENARIEN[szId];
