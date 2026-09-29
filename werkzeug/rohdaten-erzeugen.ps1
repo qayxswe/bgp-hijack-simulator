@@ -76,6 +76,27 @@ foreach ($m in 'rs_enp0s8', 'rs_lo', 'asa_enp0s8', 'asa_enp0s10', 'hijacker_enp0
   ) + $liste) -join "`n"
 }
 
+# Sitzungsaufbau: TCP- und BGP-Handshake aller drei Sitzungen beim Neustart des Dienstes
+# auf rs, kurz vor dem ersten Messpunkt T0. Enthalten im durchgehenden Mitschnitt rs_enp0s8.pcap,
+# hier nur auf das enge Zeitfenster der drei erfolgreichen Handshakes eingegrenzt.
+$pcapRs = Join-Path $Primaerdaten 'FRRouting\_RouteServer\rs_enp0s8.pcap'
+$hsFilter = 'frame.time_epoch>=1790275488.360 && frame.time_epoch<=1790275488.370'
+$hsZeilen = & $Tshark -n -r $pcapRs -Y $hsFilter -T fields -E 'separator=/t' -e frame.time_epoch -e _ws.col.Source -e _ws.col.Destination -e _ws.col.Protocol -e frame.len -e _ws.col.Info 2>$null
+$hsListe = foreach ($z in $hsZeilen) {
+  $f = $z.Split("`t")
+  $ep = [decimal]::Parse($f[0], $inv)
+  $sek = [Math]::Floor($ep)
+  $zeit = [DateTimeOffset]::FromUnixTimeSeconds([long]$sek).ToString('HH:mm:ss') + '.' + ([string]([long](($ep - $sek) * 1000000))).PadLeft(6, '0')
+  '{0}  {1,-17} {2,-17} {3,-8} {4,5}  {5}' -f $zeit, $f[1], $f[2], $f[3], $f[4], $f[5]
+}
+$roh['abgeleitet/rs_enp0s8-sitzungsaufbau.txt'] = (@(
+  '# Sitzungsaufbau (TCP- und BGP-Handshake) im Mitschnitt FRRouting/_RouteServer/rs_enp0s8.pcap',
+  "# tshark -n -r rs_enp0s8.pcap -Y `"$hsFilter`" -T fields (Zeit UTC, Mikrosekunden)",
+  '# Neustart des BGP-Dienstes auf rs, vor dem ersten Messpunkt T0 (18:45:01 UTC).',
+  '',
+  ('{0,-15}  {1,-17} {2,-17} {3,-8} {4,5}  {5}' -f 'Zeit(UTC)', 'Quelle', 'Ziel', 'Protokoll', 'Länge', 'Info')
+) + $hsListe) -join "`n"
+
 $json = $roh | ConvertTo-Json -Depth 3
 $kopf = "/* Automatisch erzeugt von werkzeug/rohdaten-erzeugen.ps1 am $((Get-Date).ToString('yyyy-MM-dd HH:mm')).`n   Woertliche Inhalte der Primaerdaten (Versuchslauf 24.09.2026). Nicht von Hand bearbeiten. */`n"
 [IO.File]::WriteAllText($ziel, $kopf + 'window.ROHDATEN = ' + $json + ";`n", (New-Object Text.UTF8Encoding($false)))
