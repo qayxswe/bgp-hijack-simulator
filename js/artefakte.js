@@ -24,7 +24,9 @@ window.App = window.App || {};
   // rs-adj zeigt je Nachbar auch Praefixe ausserhalb des Angriffs (z. B. Bobs eigenes
   // 198.51.96.0/20 mit den Rueckmeldungen von asa und hijacker) -- das war vorher nur
   // ueber den inzwischen entfernten Abfrage-Knopf "Beginn" bei rs-bgp sichtbar.
-  const VORGABE = ['rs-mrt', 'rs-journal', 'rs-pcap', 'rs-bmp', 'rs-bgp', 'rs-adj'];
+  // rs-locrib zeigt zusaetzlich den Best Path jedes Praefixes durchgehend (auch T0, wo
+  // rs-bgp fuer das noch nicht existierende Angriffspraefix leer bleibt).
+  const VORGABE = ['rs-mrt', 'rs-journal', 'rs-pcap', 'rs-bmp', 'rs-bgp', 'rs-adj', 'rs-locrib'];
   const SYSTEM_ROLLE = { rs: 'rs', asa: 'isp', clienta: 'isp', asb: 'bob', weblegit: 'bob', hijacker: 'eve', webevil: 'eve' };
 
   let wahlEl, listeEl, zaehlerEl, nurNeueEl;
@@ -64,6 +66,7 @@ window.App = window.App || {};
     document.getElementById('vollbildZu').addEventListener('click', vollbildSchliessen);
     vollbildEl.addEventListener('click', (e) => { if (e.target === vollbildEl) vollbildSchliessen(); });
     document.addEventListener('keydown', (e) => { if (e.key === 'Escape' && vollbildId) vollbildSchliessen(); });
+    machGroesseAenderbar(document.getElementById('vollbildKarte'), document.getElementById('vollbildGroesse'));
     // Vorbelegung ueber die Adresse, etwa index.html?a=rs-rib-mrt,asb-bgp#s2-6
     const a = new URLSearchParams(location.search).get('a');
     if (a) auswahl = new Set(a.split(',').filter((id) => M.ARTEFAKT[id]));
@@ -83,6 +86,28 @@ window.App = window.App || {};
   function vollbildSchliessen() {
     vollbildId = null;
     vollbildEl.classList.add('versteckt');
+  }
+  // Groesse per Griff unten rechts per Pointer-Events ziehen (statt natives CSS resize, das
+  // sich in dieser Testumgebung nicht per Skript ausloesen liesse und weniger Kontrolle gibt).
+  function machGroesseAenderbar(karte, griff) {
+    let sx = 0, sy = 0, sw = 0, sh = 0, ziehen = false;
+    griff.addEventListener('pointerdown', (ev) => {
+      ziehen = true;
+      const r = karte.getBoundingClientRect();
+      sx = ev.clientX; sy = ev.clientY; sw = r.width; sh = r.height;
+      karte.style.maxWidth = 'none';
+      karte.style.width = sw + 'px'; karte.style.height = sh + 'px';
+      try { griff.setPointerCapture(ev.pointerId); } catch (e) { /* egal, z. B. synthetische Events */ }
+      ev.stopPropagation();
+    });
+    griff.addEventListener('pointermove', (ev) => {
+      if (!ziehen) return;
+      const eltern = karte.parentElement.getBoundingClientRect();
+      const w = Math.max(480, Math.min(sw + (ev.clientX - sx), eltern.width - 8));
+      const h = Math.max(320, Math.min(sh + (ev.clientY - sy), eltern.height - 8));
+      karte.style.width = w + 'px'; karte.style.height = h + 'px';
+    });
+    griff.addEventListener('pointerup', (ev) => { ziehen = false; try { griff.releasePointerCapture(ev.pointerId); } catch (e) { /* egal */ } });
   }
 
   /* ---------------- Auswahl ---------------- */
@@ -200,7 +225,8 @@ window.App = window.App || {};
       const erg = a.typ === 'log' ? logInhalt(a, sz, schritt)
         : a.typ === 'schnappschuss' ? schnappschussInhalt(a, sz, schritt)
           : a.typ === 'statisch' ? statischInhalt(a)
-            : dumpInhalt(a, sz, schritt);
+            : a.typ === 'rekonstruktion' ? rekonstruktionInhalt(a, schritt)
+              : dumpInhalt(a, sz, schritt);
       const befehl = erg.befehl || a.befehl;
       const quelle = erg.quelle || a.quelle(sz);
       neuGesamt += erg.neu;
@@ -292,6 +318,7 @@ window.App = window.App || {};
       return fenster && fenster.neu ? 1 : 0;
     }
     if (a.typ === 'tabellendump') return dumpFenster(a, schritt).neu ? 1 : 0;
+    if (a.typ === 'rekonstruktion') return rekonstruktionInhalt(a, schritt).neu;   // nur 3 Praefixe, billig
     return 0;
   }
 
@@ -317,6 +344,22 @@ window.App = window.App || {};
   function statischInhalt(a) {
     return { html: a.zeilen.map((z) => `<div class="z">${App.faerbe(z)}</div>`).join(''), neu: 0,
       fuss: a.zeilen.length + ' Zeilen' };
+  }
+
+  // Keine echte Geraeteausgabe: eine Zeile je bekanntem Praefix, hergeleitet aus rs' Best
+  // Path (BMP Loc-RIB) -- bei asa/asb zusaetzlich mit der Regel, dass das eigene Praefix
+  // lokal immer die selbst erzeugte Route ist. "Neu" heisst hier: der Pfad hat sich in
+  // diesem Schritt tatsaechlich geaendert (nicht: die Zeile steht schon laenger da).
+  function rekonstruktionInhalt(a, schritt) {
+    let neu = 0;
+    const zeilen = M.locRibPraefixe.map((pfx) => {
+      const b = a.system === 'rs' ? Object.assign({ eigen: false }, M.bestPathRs(pfx, schritt.cursor)) : M.lokaleLocRib(a.system, pfx, schritt.cursor);
+      const istNeu = !b.eigen && b.vorhanden && b.t != null && b.t > schritt.vorher;
+      if (istNeu) neu++;
+      const text = pfx.padEnd(17) + ' ' + (!b.vorhanden ? '—' : b.eigen ? b.pfad : 'Pfad ' + b.pfad + ' · NH ' + b.nh);
+      return `<div class="z${istNeu ? ' z-neu' : ''}">${App.faerbe(text)}</div>`;
+    });
+    return { html: zeilen.join(''), neu, fuss: M.locRibPraefixe.length + ' Präfixe · Stand ' + M.zeitText(schritt.cursor, 3) + ' UTC' };
   }
 
   function schnappschussInhalt(a, sz, schritt) {
