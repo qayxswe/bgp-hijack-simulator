@@ -361,6 +361,12 @@ body.leiste-breit .art-inhalt.voll { max-height: min(76vh, 900px); }
 .z-neu { background: var(--neu-zeile-bg); border-color: var(--neu-rand); border-style: solid; border-width: 0 1px 0 3px; }
 .z-neu:first-child, :not(.z-neu) + .z-neu { border-top-width: 1px; }
 .z-neu:last-child, .z-neu:not(:has(+ .z-neu)) { border-bottom-width: 1px; }
+.z-rekon-kopf {
+  margin: 10px 0 4px; padding: 5px 10px 4px; border-top: 1px dashed var(--rand); font-family: var(--font-ui);
+  font-size: 10.5px; font-weight: 600; letter-spacing: .04em; text-transform: uppercase; color: var(--text-3);
+}
+.z-rekon-kopf span { display: block; font-weight: 400; letter-spacing: 0; text-transform: none; }
+.z-rekon { font-style: italic; }
 .z-alt { opacity: .66; }
 .z-kopf { color: var(--text-3); position: sticky; top: -4px; background: var(--kopf-bg); border-bottom: 1px solid var(--rand-2); }
 .z-gutter { display: inline-block; color: var(--text-3); margin-right: 10px; }

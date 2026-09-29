@@ -96,6 +96,8 @@
   <p>Protokolle zeigen alle Zeilen bis zum aktuellen Zeitpunkt, neue Zeilen des Schritts sind hervorgehoben,
     Zeilen vor Beginn des Szenarios (vor den Abfragen zu T0) abgeblendet. „Nur Neues“ zeigt statt der Auswahl
     alle Artefakte, die in diesem Schritt neue Zeilen haben; in der Auswahl sind sie mit einem Punkt markiert, das zentrale Artefakt des Schritts mit „!“. Abfragen zeigen die letzte Abfrage zu T0, T2 oder T4.
+    Die BGP-Tabelle von rs fragt im Original nur das Zielpraefix ab; darunter steht, kursiv und als Rekonstruktion
+    gekennzeichnet, die gesamte Loc-RIB (Pfade aus den Adj-RIB-In-Abfragen derselben Phase, Best Path laut BMP).
     rib.mrt zeigt den letzten Dump zur vollen Minute; erhalten ist nur der Stand von 18:47:00.
     Ein Klick auf ein System im Netzplan zeigt dessen Konfiguration; das Info-Fenster laesst sich an
     der Kopfzeile verschieben. Ein Klick in den Inhalt eines Artefakts oeffnet es ganzflaechig; dort zeigt der Knopf „Netzplan“
