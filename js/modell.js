@@ -191,6 +191,26 @@ window.App = window.App || {};
     return leseDatei(pfad, 'Zeit(UTC)', (z, i) => ({ t: hms(z.slice(0, 15)), zeit: z.slice(0, 15), text: z, nr: i + 1 }));
   }
 
+  /* ---------------- Sitzungsaufbau (TCP- und BGP-Handshake vor T0) ----------------
+     Fuer den Netzplan auf die sieben kennzeichnenden Pakete je Nachbar reduziert: TCP SYN,
+     SYN-ACK, das abschliessende ACK, dann je zwei BGP OPEN und KEEPALIVE. Spaetere reine
+     TCP-ACKs, die nur ein BGP-Segment quittieren, tragen nichts zum Handshake bei und werden
+     uebersprungen. Die Regel dafuer ist rein strukturell (TCP vor der ersten BGP-Nachricht
+     dieses Nachbarn zaehlt, danach nicht mehr), keine von Hand gewaehlten Zeilen. */
+  function leseSitzungsaufbau() {
+    const bgpBegonnen = new Set();
+    const ausgewaehlt = [];
+    zeilen('abgeleitet/rs_enp0s8-sitzungsaufbau.txt').forEach((z) => {
+      if (z.startsWith('#') || z.startsWith('Zeit(UTC)') || z.trim() === '') return;
+      const f = z.trim().split(/\s+/);
+      const e = { t: hms(f[0]), zeit: f[0], von: f[1], an: f[2], protokoll: f[3], info: f.slice(5).join(' ') };
+      const nachbar = e.von === '192.0.2.1' ? e.an : e.von;
+      if (e.protokoll === 'BGP') { bgpBegonnen.add(nachbar); ausgewaehlt.push(e); }
+      else if (!bgpBegonnen.has(nachbar)) ausgewaehlt.push(e);
+    });
+    return ausgewaehlt;
+  }
+
   /* ---------------- Abfragen zu T0, T2, T4 (Schnappschuesse) ---------------- */
   function leseAbschnitte(pfad) {
     const abschnitte = [];
@@ -292,6 +312,7 @@ window.App = window.App || {};
   const konfig = (vm) => zeilen('Konfiguration/' + vm + '.txt')
     .filter((z) => z !== '' && !/^(Building configuration|Current configuration|end)/.test(z));
   const sudo = leseSudo();
+  const sitzungsaufbau = leseSitzungsaufbau();
 
   const abschnitte = {};   // abschnitte[szenario][datei] = [...]
   const SCHNAPPSCHUSS_DATEIEN = ['rib-aus-dem-ram.txt', 'adj-rib-in-rs.txt', 'adj-rib-in-asa.txt', 'adj-rib-in-asb.txt',
@@ -348,6 +369,9 @@ window.App = window.App || {};
         ansicht('bmp', 'BMP, dekodiert', bmp, 'tshark -r rs_lo.pcap -d tcp.port==11019,bmp -Y bmp', R_ + 'bmp-nachrichten.txt'),
         ansicht('alle', 'alle Pakete', pakete.rs_lo, 'tshark -n -r rs_lo.pcap', R_ + 'rs_lo.pcap'),
       ] },
+    { id: 'rs-handshake', gruppe: 'rs', system: 'rs', titel: 'Sitzungsaufbau · rs_enp0s8.pcap', typ: 'log', aufloesung: 'Mikrosekunde',
+      ansichten: [ansicht('log', 'TCP- und BGP-Handshake', leseListe('abgeleitet/rs_enp0s8-sitzungsaufbau.txt'),
+        'tshark -n -r rs_enp0s8.pcap (Ausschnitt: Neustart vor T0)', R_ + 'rs_enp0s8.pcap')] },
     konfigArtefakt('rs', 'rs'),
 
     { id: 'asb-bgp', gruppe: 'bestaetigung', system: 'asb', titel: 'BGP-Tabelle', typ: 'schnappschuss',
@@ -499,6 +523,6 @@ window.App = window.App || {};
   App.modell = {
     MITTERNACHT, IP_SYSTEM, SZENARIEN, SZENARIO_REIHE, PHASEN, PHASEN_REIHE,
     ARTEFAKTE, ARTEFAKT, zeitText, bestPathRs, routingEintrag, messungClienta,
-    rohdatei: (pfad) => R[pfad],
+    sitzungsaufbau, rohdatei: (pfad) => R[pfad],
   };
 })(window.App);
