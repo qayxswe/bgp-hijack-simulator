@@ -260,7 +260,7 @@ window.App = window.App || {};
     s1: {
       T0: ['Ausgangszustand', 'hijacker kündigt kein eigenes Präfix an, 198.51.100.0/24 ist in der BGP-Tabelle von rs unbekannt. Alice erreicht Bobs Server über asb.'],
       T1: [
-        ['Befehl auf hijacker', 'Eve kündigt per vtysh 198.51.100.0/24 an.'],
+        ['Befehl auf hijacker', 'Eve trägt auf dem BGP-Router hijacker per vtysh das bösartige Präfix 198.51.100.0/24 ein (network-Befehl). Die Ankündigung selbst erreicht rs erst im nächsten Schritt.'],
         ['Ankündigung erreicht rs', 'Eves UPDATE mit dem Pfad 64511 trifft auf rs ein. MRT-Dump, Textprotokoll, Mitschnitt und BMP (Adj-RIB-In) halten es fest.'],
         ['Best Path und Weitergabe', 'Die Loc-RIB übernimmt Eves Pfad 50 ms nach der Ankunft. rs gibt ihn unverändert an alle drei Nachbarn weiter, auch an hijacker selbst. Die Weitergabe steht im Textprotokoll und im Mitschnitt, nicht im MRT-Dump.'],
         ['Rückmeldungen von asb und asa', 'asb und asa übernehmen die /24 und senden sie mit vorangestellter eigener AS-Nummer an rs zurück. Bei asb wird die Nummer wegen der Pfadverlängerung dreifach vorangestellt.'],
@@ -280,7 +280,7 @@ window.App = window.App || {};
     s2: {
       T0: ['Ausgangszustand', 'Bobs Pfad 64496 64496 64496 ist Best Path für 198.51.96.0/20. hijacker kündigt nichts Eigenes an.'],
       T1: [
-        ['Befehl auf hijacker', 'Eve kündigt per vtysh dasselbe Präfix wie Bob an, 198.51.96.0/20.'],
+        ['Befehl auf hijacker', 'Eve trägt auf dem BGP-Router hijacker per vtysh dasselbe Präfix wie Bob ein, 198.51.96.0/20 (network-Befehl). Die Ankündigung selbst erreicht rs erst im nächsten Schritt.'],
         ['Ankündigung erreicht rs', 'Eves UPDATE mit dem Pfad 64511 trifft auf rs ein. Für dasselbe Präfix liegen nun zwei Ursprünge vor.'],
         ['Best Path wechselt', 'Eves Pfad ist einen Eintrag lang, Bobs drei. Die Loc-RIB ersetzt Bobs Pfad nach 50 ms, ohne dass Bob etwas zurückzieht. rs gibt Eves Pfad an alle weiter.'],
         ['Rückmeldung nur von asa', 'Nur asa meldet Eves Pfad zurück. asb behält die eigene, lokal erzeugte Route (Weight 32768) und sendet keine Rückmeldung.'],
@@ -349,6 +349,12 @@ window.App = window.App || {};
     { id: 'rs-adj', gruppe: 'rs', system: 'rs', titel: 'RIBs im RAM · Adj-RIB-In je Nachbar', typ: 'schnappschuss',
       befehl: 'vtysh -c "show bgp ipv4 unicast neighbors <Adresse> received-routes"', aufloesung: 'Abfragezeitpunkt',
       quelle: (sz) => sz.ordner + '/adj-rib-in-rs.txt', abschnitte: schnappschuss('adj-rib-in-rs.txt') },
+    // Keine echte vtysh-Ausgabe, sondern aus der durchgehenden BMP-Ausleitung hergeleitet:
+    // zeigt fuer jedes im Lauf vorkommende Praefix den Best Path von rs zu jedem Zeitpunkt,
+    // nicht nur fuer das jeweilige Angriffspraefix wie rs-bgp. Beantwortet "wer wuerde wohin
+    // routen", auch wenn das nie so abgefragt wurde.
+    { id: 'rs-locrib', gruppe: 'rs', system: 'rs', titel: 'Loc-RIB · rekonstruiert', typ: 'rekonstruktion', aufloesung: 'laufend',
+      befehl: 'aus BMP Loc-RIB hergeleitet (keine vtysh-Ausgabe)', quelle: () => R_ + 'bmp-nachrichten.txt' },
     { id: 'rs-mrt', gruppe: 'rs', system: 'rs', titel: 'MRT-Dump · updates.mrt', typ: 'log', aufloesung: 'Sekunde', mrtZeit: true,
       ansichten: [ansicht('mrt', 'bgpdump -m', mrt, 'bgpdump -m /var/log/frr/updates.mrt', R_ + 'mrt-updates-bgpdump.txt')] },
     { id: 'rs-rib-mrt', gruppe: 'rs', system: 'rs', titel: 'MRT-Tabellendump · rib.mrt', typ: 'tabellendump',
@@ -383,6 +389,8 @@ window.App = window.App || {};
     { id: 'asb-fib', gruppe: 'bestaetigung', system: 'asb', titel: 'Routing-Tabelle', typ: 'schnappschuss',
       befehl: 'vtysh -c "show ip route 198.51.100.10"', aufloesung: 'Abfragezeitpunkt',
       quelle: (sz) => sz.ordner + '/routing-tabelle-asb.txt', abschnitte: schnappschuss('routing-tabelle-asb.txt') },
+    { id: 'asb-locrib', gruppe: 'bestaetigung', system: 'asb', titel: 'Loc-RIB · rekonstruiert', typ: 'rekonstruktion', aufloesung: 'laufend',
+      befehl: 'aus rs Best Path (BMP) und eigenem network-Befehl hergeleitet', quelle: () => R_ + 'bmp-nachrichten.txt' },
     konfigArtefakt('asb', 'bestaetigung'),
     zugriffArtefakt('weblegit'),
     { id: 'asa-bgp', gruppe: 'bestaetigung', system: 'asa', titel: 'BGP-Tabelle', typ: 'schnappschuss',
@@ -394,6 +402,8 @@ window.App = window.App || {};
     { id: 'asa-fib', gruppe: 'bestaetigung', system: 'asa', titel: 'Routing-Tabelle', typ: 'schnappschuss',
       befehl: 'vtysh -c "show ip route 198.51.100.10"', aufloesung: 'Abfragezeitpunkt',
       quelle: (sz) => sz.ordner + '/routing-tabelle-asa.txt', abschnitte: schnappschuss('routing-tabelle-asa.txt') },
+    { id: 'asa-locrib', gruppe: 'bestaetigung', system: 'asa', titel: 'Loc-RIB · rekonstruiert', typ: 'rekonstruktion', aufloesung: 'laufend',
+      befehl: 'aus rs Best Path (BMP) und eigenem network-Befehl hergeleitet', quelle: () => R_ + 'bmp-nachrichten.txt' },
     { id: 'asa-pcap8', gruppe: 'bestaetigung', system: 'asa', titel: 'Paketmitschnitt enp0s8', typ: 'log', aufloesung: 'Mikrosekunde',
       ansichten: [ansicht('alle', 'alle Pakete', pakete.asa_enp0s8, 'tshark -n -r asa_enp0s8.pcap', R_ + 'asa_enp0s8.pcap')] },
     { id: 'asa-pcap', gruppe: 'bestaetigung', system: 'asa', titel: 'Paketmitschnitt enp0s10', typ: 'log', aufloesung: 'Mikrosekunde',
@@ -508,6 +518,26 @@ window.App = window.App || {};
     const weg = a.zeilen.map((z) => /^\s+\* (.+?), (?:via )?(\S+?)(?:, weight.*)?$/.exec(z)).find(Boolean);
     return { phase: a.phase, praefix: eintrag ? eintrag[1] : '?', nh: weg ? weg[1] : '?', schnittstelle: weg ? weg[2] : '' };
   }
+  // Alle Praefixe, die je in der Loc-RIB von rs auftauchen (BMP-Ausleitung) -- die
+  // tatsaechliche Grundgesamtheit dieses Labors: Bobs und asas eigene Praefixe, dazu das
+  // jeweilige Angriffspraefix. Ergaenzt um beide eigenen Praefixe, falls eines davon (z. B.
+  // vor dem allerersten BMP-Ereignis) noch nicht aufgetaucht sein sollte.
+  const EIGENES_PRAEFIX = { asa: '203.0.113.0/24', asb: '198.51.96.0/20' };
+  function alleLocRibPraefixe() {
+    const s = new Set(Object.values(EIGENES_PRAEFIX));
+    bmp.eintraege.forEach((b) => { if (b.art === 'RM' && b.sicht === 'Loc-RIB' && b.praefix) s.add(b.praefix); });
+    return Array.from(s).sort();
+  }
+  // Rekonstruierte lokale Loc-RIB eines Routers (asa/asb) fuer ein Praefix: das eigene, per
+  // network-Befehl angekuendigte Praefix ist lokal immer die bevorzugte, selbst erzeugte
+  // Route (hoher Weight), unabhaengig davon, was rs sonst als Best Path fuehrt. Fuer jedes
+  // andere Praefix spiegelt rs seinen Best Path unveraendert an alle Nachbarn -- auch an den
+  // Ursprung selbst (Abschnitt 8/9) --, der Nachbar uebernimmt also rs' Entscheidung.
+  function lokaleLocRib(vm, praefix, t) {
+    if (praefix === EIGENES_PRAEFIX[vm]) return { vorhanden: true, eigen: true, pfad: 'eigene Route (network-Befehl)', nh: null, t: null };
+    return Object.assign({ eigen: false }, bestPathRs(praefix, t));
+  }
+  const locRibPraefixe = alleLocRibPraefixe();
   // Letzte Messung von clienta bis t: HTTP-Ergebnis und zweiter Hop.
   function messungClienta(szId, t) {
     const liste = abschnitte[szId]['messprotokoll-clienta.txt'].filter((a) => a.tBis <= t);
@@ -523,6 +553,6 @@ window.App = window.App || {};
   App.modell = {
     MITTERNACHT, IP_SYSTEM, SZENARIEN, SZENARIO_REIHE, PHASEN, PHASEN_REIHE,
     ARTEFAKTE, ARTEFAKT, zeitText, bestPathRs, routingEintrag, messungClienta,
-    sitzungsaufbau, rohdatei: (pfad) => R[pfad],
+    lokaleLocRib, locRibPraefixe, sitzungsaufbau, rohdatei: (pfad) => R[pfad],
   };
 })(window.App);
