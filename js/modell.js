@@ -490,6 +490,14 @@ window.App = window.App || {};
     zustand('T2');
     ereignisse('T3', befehle[1]);
     zustand('T4');
+    // Kernschritte fuer einen kurzen Vortrag: alle Zustaende, beide Befehle und je Ereignisphase
+    // der erste und der letzte Wechsel der Loc-RIB von rs (laut BMP). Die uebrigen Schritte
+    // bleiben ueber Ablaufliste und Phasenleiste erreichbar.
+    schritte.forEach((s) => { s.kern = s.art !== 'ereignis'; });
+    ['T1', 'T3'].forEach((phase) => {
+      const loc = schritte.filter((s) => s.phase === phase && s.art === 'ereignis' && s.bmp.some((b) => b.sicht === 'Loc-RIB'));
+      if (loc.length) { loc[0].kern = true; loc[loc.length - 1].kern = true; }
+    });
     schritte.forEach((s, i) => { s.index = i; s.vorher = i ? schritte[i - 1].cursor : phasenbeginn(szId, 'T0') - 1; });
     return schritte;
   }

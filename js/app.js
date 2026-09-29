@@ -146,7 +146,29 @@ window.App = window.App || {};
       details: document.getElementById('schrittDetails'),
       zeit: document.getElementById('zeitAnzeige'),
       handschlagBtn,
+      kern: document.getElementById('kernUmschalten'),
     });
     reiterAufbauen();
+    document.addEventListener('szenario-gewechselt', reiterMarkieren);
+
+    // Vergleich erst nach der Steuerung anmelden: deren Tastenhandler sieht so noch "offen"
+    // und schaltet nicht zusaetzlich einen Schritt zurueck, wenn ← den Vergleich schliesst.
+    App.vergleich.init(document.getElementById('vergleich'));
+    document.getElementById('vergleichAuf').addEventListener('click', () => App.vergleich.oeffnen());
+
+    /* Praesentation: Seitenleiste ausblenden, Netzplan in voller Breite (merkt sich die Wahl) */
+    const praes = document.getElementById('praesUmschalten');
+    const setzePraes = (an, ohneMerken) => {
+      document.body.classList.toggle('praesentation', an);
+      praes.classList.toggle('an', an);
+      praes.setAttribute('aria-pressed', String(an));
+      if (!ohneMerken) try { localStorage.setItem('bgp-sim-praes', an ? '1' : '0'); } catch (e) { /* egal */ }
+    };
+    try { setzePraes(localStorage.getItem('bgp-sim-praes') === '1', true); } catch (e) { /* egal */ }
+    praes.addEventListener('click', () => setzePraes(!document.body.classList.contains('praesentation')));
+    document.addEventListener('keydown', (e) => {
+      if (e.ctrlKey || e.altKey || e.metaKey || (e.target && /INPUT|SELECT|TEXTAREA/.test(e.target.tagName))) return;
+      if (e.key === 'p' || e.key === 'P') setzePraes(!document.body.classList.contains('praesentation'));
+    });
   });
 })(window.App);

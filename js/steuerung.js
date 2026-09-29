@@ -13,6 +13,8 @@ window.App = window.App || {};
   let letzteZeit = null;
   let dom = {};
   let letzterSchritt = null;
+  let nurKern = false;            // Vortragsmodus: Vor/Zurueck nur ueber die Kernschritte
+  try { nurKern = localStorage.getItem('bgp-sim-kern') === '1'; } catch (e) { /* egal */ }
 
   const sz = () => M.SZENARIEN[szId];
   const schritt = () => sz().schritte[index];
@@ -20,16 +22,24 @@ window.App = window.App || {};
   function init(refs) {
     dom = refs;
     dom.spielen.addEventListener('click', () => setzeSpielen(!spielt));
-    dom.vor.addEventListener('click', () => geheZu(index + 1));
-    dom.zurueck.addEventListener('click', () => geheZu(index - 1));
+    dom.vor.addEventListener('click', () => weiter(1));
+    dom.zurueck.addEventListener('click', () => weiter(-1));
+    if (dom.kern) dom.kern.addEventListener('click', () => setzeKern(!nurKern));
+    setzeKern(nurKern, true);
     document.addEventListener('keydown', (e) => {
       if (e.target && /INPUT|SELECT|TEXTAREA/.test(e.target.tagName)) return;
-      if (e.key === 'ArrowRight') { e.preventDefault(); geheZu(index + 1); }
-      else if (e.key === 'ArrowLeft') { e.preventDefault(); geheZu(index - 1); }
+      if (e.ctrlKey || e.altKey || e.metaKey) return;
+      if (App.vergleich && App.vergleich.offen()) return;          // eigene Tasten im Vergleich
+      // Presenter senden meist Bild auf/ab; beides wirkt wie die Pfeiltasten.
+      if (e.key === 'ArrowRight' || e.key === 'PageDown') { e.preventDefault(); weiter(1); }
+      else if (e.key === 'ArrowLeft' || e.key === 'PageUp') { e.preventDefault(); weiter(-1); }
       else if (e.key === ' ') { e.preventDefault(); setzeSpielen(!spielt); }
-      else if (e.key === 'Home') { e.preventDefault(); geheZu(0); }
-      else if (e.key === 'End') { e.preventDefault(); geheZu(sz().schritte.length - 1); }
+      else if (e.key === 'Home') { e.preventDefault(); geheZu(ersterIndex()); }
+      else if (e.key === 'End') { e.preventDefault(); geheZu(letzterIndex()); }
       else if (/^[0-4]$/.test(e.key)) { geheZuPhase('T' + e.key); }
+      else if (e.key === 'k' || e.key === 'K') { setzeKern(!nurKern); }
+      else if (e.key === 's' || e.key === 'S') { wechsleSzenario(szId === 's1' ? 's2' : 's1'); }
+      else if ((e.key === 'v' || e.key === 'V') && App.vergleich) { App.vergleich.oeffnen(); }
       else if (e.key === 'Escape') { App.netz.infoAus(); }
     });
     // Direktaufruf eines Schritts: index.html#s2-8
@@ -40,13 +50,49 @@ window.App = window.App || {};
     geheZu(m && m[2] ? Math.min(+m[2] - 1, sz().schritte.length - 1) : 0);
   }
 
-  function wechsleSzenario(id) {
+  function wechsleSzenario(id, amEnde) {
     if (!M.SZENARIEN[id]) return;
     szId = id;
     App.netz.infoAus();
     phasenleisteAufbauen();
     ablaufAufbauen();
-    geheZu(0);
+    geheZu(amEnde ? letzterIndex() : ersterIndex());
+    document.dispatchEvent(new CustomEvent('szenario-gewechselt', { detail: id }));
+  }
+
+  /* ---------------- Vortragsfolge ----------------
+     Vor/Zurueck (Pfeile, Bild auf/ab, Knoepfe) laufen durchgehend: Szenario 1 -> Szenario 2
+     -> Vergleich. Im Kernschritte-Modus werden die uebrigen Schritte uebersprungen. */
+  const zaehlt = (s) => !nurKern || s.kern;
+  function ersterIndex() { const i = sz().schritte.findIndex(zaehlt); return i < 0 ? 0 : i; }
+  function letzterIndex() {
+    const l = sz().schritte;
+    for (let i = l.length - 1; i >= 0; i--) if (zaehlt(l[i])) return i;
+    return l.length - 1;
+  }
+  function weiter(richtung) {
+    const l = sz().schritte;
+    for (let i = index + richtung; i >= 0 && i < l.length; i += richtung) {
+      if (zaehlt(l[i])) { geheZu(i); return; }
+    }
+    const reihe = M.SZENARIO_REIHE, pos = reihe.indexOf(szId);
+    if (richtung > 0 && pos < reihe.length - 1) wechsleSzenario(reihe[pos + 1]);
+    else if (richtung > 0 && App.vergleich) App.vergleich.oeffnen();
+    else if (richtung < 0 && pos > 0) wechsleSzenario(reihe[pos - 1], true);
+  }
+  function setzeKern(an, ohneMerken) {
+    nurKern = !!an;
+    if (!ohneMerken) try { localStorage.setItem('bgp-sim-kern', nurKern ? '1' : '0'); } catch (e) { /* egal */ }
+    document.body.classList.toggle('nur-kern', nurKern);
+    if (dom.kern) {
+      dom.kern.classList.toggle('an', nurKern);
+      dom.kern.setAttribute('aria-pressed', String(nurKern));
+      const n = sz().schritte.filter((s) => s.kern).length;
+      dom.kern.textContent = nurKern ? 'Kernschritte (' + n + ')' : 'Alle Schritte';
+      dom.kern.title = (nurKern ? 'Nur die ' + n + ' Kernschritte' : 'Alle ' + sz().schritte.length + ' Schritte')
+        + ' · umschalten mit K';
+    }
+    if (letzterSchritt) { letzterSchritt = null; bild(); }
   }
 
   // geheZu bewegt sich zwischen Schritten (← / →, Ablauf, Phasenleiste); das Abspielen der
@@ -124,7 +170,7 @@ window.App = window.App || {};
       const ticks = seg.querySelector('.phase-ticks');
       schritte.forEach((s) => {
         const t = document.createElement('button');
-        t.className = 'tick art-' + s.art;
+        t.className = 'tick art-' + s.art + (s.kern ? ' kern' : ' neben');
         t.dataset.i = s.index;
         t.title = zeitAnzeige(s) + ' UTC · ' + s.titel;
         t.addEventListener('click', () => geheZu(s.index));
@@ -138,7 +184,7 @@ window.App = window.App || {};
     dom.ablauf.innerHTML = '';
     sz().schritte.forEach((s) => {
       const z = document.createElement('button');
-      z.className = 'ablauf-zeile art-' + s.art;
+      z.className = 'ablauf-zeile art-' + s.art + (s.kern ? ' kern' : ' neben');
       z.dataset.i = s.index;
       z.innerHTML = `<span class="ab-phase">${s.phase}</span><span class="ab-zeit">${zeitAnzeige(s)}</span><span class="ab-titel">${s.titel}</span>`;
       z.addEventListener('click', () => geheZu(s.index));
@@ -229,14 +275,24 @@ window.App = window.App || {};
       });
       const akt = dom.ablauf.querySelector('.jetzt');
       if (akt) akt.scrollIntoView({ block: 'nearest' });
-      dom.zurueck.disabled = index === 0;
-      dom.vor.disabled = index === z.schritte.length - 1;
+      // durchgehende Folge: zurueck nur am Anfang von Szenario 1 gesperrt, vor fuehrt am Ende zum Vergleich
+      dom.zurueck.disabled = szId === M.SZENARIO_REIHE[0] && index <= ersterIndex();
+      dom.vor.disabled = false;
+      dom.vor.title = szId === M.SZENARIO_REIHE[M.SZENARIO_REIHE.length - 1] && index >= letzterIndex()
+        ? 'Weiter zum Vergleich der Szenarien (→ / Bild ab)' : 'Schritt vor (→ / Bild ab)';
+      if (dom.kern) setzeKernText();
     }
+  }
+
+  function setzeKernText() {
+    const n = sz().schritte.filter((s) => s.kern).length;
+    dom.kern.textContent = nurKern ? 'Kernschritte (' + n + ')' : 'Alle Schritte';
   }
 
   App.steuerung = {
     init, wechsleSzenario, geheZu, neuZeichnen: () => { letzterSchritt = null; bild(); },
     wiederholen: () => { letzterSchritt = null; geheZu(index, false); },
     szenario: () => szId,
+    weiter, setzeKern,
   };
 })(window.App);
