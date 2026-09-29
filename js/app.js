@@ -73,6 +73,16 @@ window.App = window.App || {};
     document.getElementById('hilfeAuf').addEventListener('click', () => hilfe.showModal());
     document.getElementById('hilfeZu').addEventListener('click', () => hilfe.close());
 
+    const handschlagBtn = document.getElementById('handschlagBtn');
+    handschlagBtn.addEventListener('click', () => {
+      const an = !App.netz.istHandschlagAn();
+      App.netz.setzeHandschlag(an);
+      handschlagBtn.classList.toggle('an', an);
+      handschlagBtn.setAttribute('aria-pressed', String(an));
+      // bei "an" von vorn animieren (SYN zuerst), bei "aus" nur neu zeichnen
+      if (an) App.steuerung.wiederholen(); else App.steuerung.neuZeichnen();
+    });
+
     App.steuerung.init({
       spielen: document.getElementById('spielen'),
       vor: document.getElementById('vor'),
@@ -85,6 +95,7 @@ window.App = window.App || {};
       text: document.getElementById('schrittText'),
       details: document.getElementById('schrittDetails'),
       zeit: document.getElementById('zeitAnzeige'),
+      handschlagBtn,
     });
     reiterAufbauen();
   });
